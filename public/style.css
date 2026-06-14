@@ -367,7 +367,7 @@ h1, h2, h3, h4, h5, h6 {
 /* ── Kanban Column Headers ───────────────────────────────── */
 .kanban-column-header {
   font-weight: 800;
-  font-size: 0.82rem;
+  font-size: 1.2rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 0.75rem 1rem;
@@ -382,6 +382,10 @@ h1, h2, h3, h4, h5, h6 {
 .kanban-column-header.open      { background: rgba(124, 58, 237, 0.15); color: #c084fc; border: 1px solid rgba(124, 58, 237, 0.25); }
 .kanban-column-header.progress  { background: rgba(245, 158, 11, 0.12); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.2); }
 .kanban-column-header.resolved  { background: rgba(16, 185, 129, 0.12); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.2); }
+
+.progress {
+  --bs-progress-height: 3.4rem;
+}
 
 /* ── Request Card & Glow Keyframes ────────────────────────── */
 .request-card {
