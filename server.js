@@ -138,6 +138,39 @@ const volunteers = [
   },
 ];
 
+// ── Helper: Get Dynamic Volunteers ─────────────────────────────
+/**
+ * Calculates volunteer availability dynamically based on active requests in Firestore.
+ * If a volunteer is assigned to an active ("Open" or "In Progress") request,
+ * they are marked as busy (available = false).
+ */
+async function getDynamicVolunteers() {
+  try {
+    const snapshot = await db.collection("requests")
+      .where("status", "in", ["Open", "In Progress"])
+      .get();
+    
+    const busyVolunteerIds = new Set();
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.matchedVolunteer && data.matchedVolunteer.id) {
+        busyVolunteerIds.add(data.matchedVolunteer.id);
+      }
+    });
+
+    return volunteers.map((v) => {
+      const isBusy = busyVolunteerIds.has(v.id);
+      return {
+        ...v,
+        available: v.id === "v003" ? false : !isBusy, // Keep Anita Desai (v003) busy as a sample, update others
+      };
+    });
+  } catch (err) {
+    console.error("⚠️ Error calculating dynamic volunteers:", err.message);
+    return volunteers; // Fallback to hardcoded list
+  }
+}
+
 // ── Volunteer Matching Function ───────────────────────────────
 /**
  * matchVolunteer
@@ -152,13 +185,14 @@ const volunteers = [
  *
  * @param {string} category - e.g. "Medical", "Food", "Shelter"
  * @param {string} zone     - e.g. "North", "South"
+ * @param {Array} dynamicVolunteersList - Optional list of volunteers with dynamic availability
  * @returns {object|null}   - The best matched volunteer, or null if none
  */
-function matchVolunteer(category, zone) {
+function matchVolunteer(category, zone, dynamicVolunteersList = volunteers) {
   let bestMatch = null;
   let highestScore = -1;
 
-  for (const volunteer of volunteers) {
+  for (const volunteer of dynamicVolunteersList) {
     // Skip volunteers who are already busy
     if (!volunteer.available) continue;
 
@@ -238,7 +272,8 @@ Example output:
     const { category, urgency, detectedLanguage, translatedDescription } = classified;
 
     // ── Step 2: Match a volunteer ────────────────────────────
-    const matchedVolunteer = matchVolunteer(category, zone);
+    const dynamicVolunteersList = await getDynamicVolunteers();
+    const matchedVolunteer = matchVolunteer(category, zone, dynamicVolunteersList);
 
     // ── Step 3: Build the full record to save ────────────────
     const timestamp = new Date().toISOString();
@@ -342,7 +377,8 @@ Response:
     const { name, phone, zone, address, description, category, urgency, detectedLanguage } = parsed;
 
     // Match a volunteer
-    const matchedVolunteer = matchVolunteer(category, zone);
+    const dynamicVolunteersList = await getDynamicVolunteers();
+    const matchedVolunteer = matchVolunteer(category, zone, dynamicVolunteersList);
 
     const timestamp = new Date().toISOString();
     const requestRecord = {
@@ -478,8 +514,9 @@ app.post("/api/inventory/restock", async (req, res) => {
  * can display a real-time list of volunteers, their status,
  * locations, and skills.
  */
-app.get("/api/volunteers", (req, res) => {
-  return res.json({ success: true, volunteers });
+app.get("/api/volunteers", async (req, res) => {
+  const dynamicVolunteersList = await getDynamicVolunteers();
+  return res.json({ success: true, volunteers: dynamicVolunteersList });
 });
 
 // ── Route: GET /api/requests ──────────────────────────────────

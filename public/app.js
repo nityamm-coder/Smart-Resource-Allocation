@@ -312,6 +312,9 @@ if (isDashboardPage) {
     if (createdAt.seconds !== undefined) {
       return new Date(createdAt.seconds * 1000);
     }
+    if (createdAt._seconds !== undefined) {
+      return new Date(createdAt._seconds * 1000);
+    }
     return new Date(createdAt);
   }
 
