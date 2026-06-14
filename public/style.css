@@ -68,22 +68,31 @@ h1, h2, h3, h4, h5, h6 {
   color: transparent;
 }
 
-.navbar>.container, .navbar>.container-fluid, .navbar>.container-lg, .navbar>.container-md, .navbar>.container-sm, .navbar>.container-xl, .navbar>.container-xxl {
+.navbar>.container {
     display: flex;
     flex-wrap: inherit;
     align-items: center;
     justify-content: space-between;
-    /* padding-top: 1rem;
-    padding-bottom: 1rem; */
+    padding-top: 1rem;
+    padding-bottom: 1rem; 
     padding: 0.6rem 0rem;
+} 
+.container-fluid{
+    --bs-gutter-x: 1.5rem;
+    --bs-gutter-y: ;
+    width: 99%;
+    padding-right: calc(var(--bs-gutter-x) * 3.5);
+    padding-left: calc(var(--bs-gutter-x) * 2.5);
+    margin-right: auto;
+    margin-left: auto;
 }
 
-.btn-group-sm>.btn, .btn-sm {
+/* .btn-group-sm>.btn {
     --bs-btn-padding-y: 0.45rem;
     --bs-btn-padding-x: 0.7rem;
     --bs-btn-font-size: 1.3rem;
     --bs-btn-border-radius: var(--bs-border-radius-sm);
-}
+} */
 
 
 /* ── Hero Section (index.html) ───────────────────────────── */
