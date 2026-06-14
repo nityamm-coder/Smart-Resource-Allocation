@@ -241,6 +241,7 @@ Example output:
     const matchedVolunteer = matchVolunteer(category, zone);
 
     // ── Step 3: Build the full record to save ────────────────
+    const timestamp = new Date().toISOString();
     const requestRecord = {
       description,
       zone,
@@ -261,6 +262,14 @@ Example output:
         : null,
       status: "Open", // All new requests start as "Open"
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      timeline: [
+        {
+          status: "Open",
+          timestamp,
+          note: `Request reported in ${detectedLanguage || "English"}. AI Urgency: ${urgency}/5.` +
+                (matchedVolunteer ? ` Automatically matched to volunteer ${matchedVolunteer.name}.` : " No volunteer matched.")
+        }
+      ]
     };
 
     // ── Step 4: Save to Firestore ────────────────────────────
@@ -299,6 +308,66 @@ app.get("/api/requests/:id", async (req, res) => {
   } catch (err) {
     console.error("❌ Error fetching request status:", err.message);
     return res.status(500).json({ error: "Could not fetch status." });
+  }
+});
+
+// ── Route: GET /api/inventory ─────────────────────────────────
+/**
+ * Retrieves the current relief supply inventory counts.
+ * Seeds default values if the inventory doesn't exist yet.
+ */
+app.get("/api/inventory", async (req, res) => {
+  try {
+    const docRef = db.collection("inventory").doc("current");
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      const defaultInventory = { Food: 50, Medical: 30, Shelter: 20, Other: 100 };
+      await docRef.set(defaultInventory);
+      return res.json({ success: true, inventory: defaultInventory });
+    }
+    return res.json({ success: true, inventory: doc.data() });
+  } catch (err) {
+    console.error("❌ Error fetching inventory:", err.message);
+    return res.status(500).json({ error: "Could not fetch inventory." });
+  }
+});
+
+// ── Route: POST /api/inventory/restock ────────────────────────
+/**
+ * Restocks relief supply items.
+ * Expects { category, quantity } in body.
+ */
+app.post("/api/inventory/restock", async (req, res) => {
+  const { category, quantity } = req.body;
+  
+  const validCategories = ["Food", "Medical", "Shelter", "Other"];
+  if (!validCategories.includes(category)) {
+    return res.status(400).json({ error: `Invalid category. Use one of: ${validCategories.join(", ")}` });
+  }
+
+  const numQty = Number(quantity);
+  if (isNaN(numQty) || numQty <= 0) {
+    return res.status(400).json({ error: "Quantity must be a positive number." });
+  }
+
+  try {
+    const docRef = db.collection("inventory").doc("current");
+    let updatedInv = {};
+    
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(docRef);
+      const currentInv = doc.exists ? doc.data() : { Food: 50, Medical: 30, Shelter: 20, Other: 100 };
+      const currentVal = currentInv[category] !== undefined ? currentInv[category] : 0;
+      const newVal = currentVal + numQty;
+      
+      updatedInv = { ...currentInv, [category]: newVal };
+      transaction.set(docRef, updatedInv);
+    });
+
+    return res.json({ success: true, inventory: updatedInv });
+  } catch (err) {
+    console.error("❌ Error restocking inventory:", err.message);
+    return res.status(500).json({ error: "Could not restock inventory." });
   }
 });
 
@@ -343,6 +412,8 @@ app.get("/api/requests", async (req, res) => {
 /**
  * Lets the NGO dashboard update the status of a request
  * e.g. from "Open" → "In Progress" → "Resolved"
+ * Also logs the status change event in the request's timeline,
+ * and increments or decrements the category inventory as needed.
  */
 app.patch("/api/requests/:id/status", async (req, res) => {
   const { id } = req.params;
@@ -354,7 +425,56 @@ app.patch("/api/requests/:id/status", async (req, res) => {
   }
 
   try {
-    await db.collection("requests").doc(id).update({ status });
+    const docRef = db.collection("requests").doc(id);
+    const doc = await docRef.get();
+    if (!doc.exists) {
+      return res.status(404).json({ error: "Request not found." });
+    }
+
+    const currentData = doc.data();
+    const oldStatus = currentData.status;
+
+    if (oldStatus === status) {
+      return res.json({ success: true, id, status });
+    }
+
+    const timestamp = new Date().toISOString();
+    let timelineNote = `Status updated from ${oldStatus} to ${status}.`;
+    const inventoryRef = db.collection("inventory").doc("current");
+    const category = currentData.category || "Other";
+
+    await db.runTransaction(async (transaction) => {
+      // 1. Calculate inventory changes
+      if (status === "Resolved" && oldStatus !== "Resolved") {
+        const invDoc = await transaction.get(inventoryRef);
+        const currentInv = invDoc.exists ? invDoc.data() : { Food: 50, Medical: 30, Shelter: 20, Other: 100 };
+        const count = currentInv[category] !== undefined ? currentInv[category] : 10;
+        const newCount = Math.max(0, count - 1);
+        
+        transaction.set(inventoryRef, { [category]: newCount }, { merge: true });
+        timelineNote += ` 1 ${category} package deducted from inventory (Remaining: ${newCount}).`;
+      } else if (oldStatus === "Resolved" && status !== "Resolved") {
+        const invDoc = await transaction.get(inventoryRef);
+        const currentInv = invDoc.exists ? invDoc.data() : { Food: 50, Medical: 30, Shelter: 20, Other: 100 };
+        const count = currentInv[category] !== undefined ? currentInv[category] : 10;
+        const newCount = count + 1;
+        
+        transaction.set(inventoryRef, { [category]: newCount }, { merge: true });
+        timelineNote += ` 1 ${category} package returned to inventory (New Total: ${newCount}).`;
+      }
+
+      // 2. Build new timeline
+      const newTimelineEntry = {
+        status,
+        timestamp,
+        note: timelineNote
+      };
+      const updatedTimeline = [...(currentData.timeline || []), newTimelineEntry];
+
+      // 3. Commit status and timeline updates
+      transaction.update(docRef, { status, timeline: updatedTimeline });
+    });
+
     return res.json({ success: true, id, status });
   } catch (err) {
     console.error("❌ Error updating status:", err.message);

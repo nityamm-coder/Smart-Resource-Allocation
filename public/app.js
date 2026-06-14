@@ -56,18 +56,37 @@ if (isIndexPage) {
     return icons[category] || category;
   }
 
+  function renderLiveTimeline(timelineEvents) {
+    const container = document.getElementById("tracker-timeline-container");
+    if (!container || !timelineEvents) return;
+    
+    container.innerHTML = timelineEvents.map(event => {
+      const timeStr = new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      let statusClass = "active";
+      if (event.status === "Resolved") statusClass = "completed";
+      return `
+        <div class="timeline-event ${statusClass}">
+          <div class="timeline-event-dot"></div>
+          <span class="timeline-event-time">${timeStr}</span>
+          <span class="timeline-event-note">${event.note}</span>
+        </div>
+      `;
+    }).join("");
+  }
+
   function startStatusTracking(requestId) {
     if (statusInterval) clearInterval(statusInterval);
-    const stepAssigned = document.getElementById("step-assigned");
-    const stepResolved = document.getElementById("step-resolved");
-
+    
     statusInterval = setInterval(async () => {
+      const stepAssigned = document.getElementById("step-assigned");
+      const stepResolved = document.getElementById("step-resolved");
       try {
         const res = await fetch(`${API_BASE}/api/requests/${requestId}`);
         if (res.ok) {
           const data = await res.json();
-          const status = data.request.status;
-          const hasVolunteer = !!data.request.matchedVolunteer;
+          const request = data.request;
+          const status = request.status;
+          const hasVolunteer = !!request.matchedVolunteer;
 
           if (stepAssigned && stepResolved) {
             stepAssigned.className = "step";
@@ -88,6 +107,8 @@ if (isIndexPage) {
               clearInterval(statusInterval);
             }
           }
+
+          renderLiveTimeline(request.timeline);
         }
       } catch (err) {
         console.error("Error polling status:", err);
@@ -153,7 +174,18 @@ if (isIndexPage) {
           </div>
         </div>
         <p class="mb-0 text-muted mt-3" style="font-size:0.82rem;">Request ID: ${data.id}</p>
+        
+        <div class="mt-4 pt-3 border-top border-secondary-subtle text-start">
+          <p class="mb-2 fw-bold" style="font-size:0.82rem; color: var(--text-muted);"><i class="bi bi-clock-history me-1"></i>Live Action Log:</p>
+          <div id="tracker-timeline-container" class="timeline-container">
+            <!-- Dynamic timeline populated here -->
+          </div>
+        </div>
       `;
+
+      setTimeout(() => {
+        renderLiveTimeline(data.timeline);
+      }, 0);
 
       startStatusTracking(data.id);
     } else {
@@ -275,8 +307,31 @@ if (isDashboardPage) {
     return icons[category] || category;
   }
 
+  function parseDate(createdAt) {
+    if (!createdAt) return new Date();
+    if (createdAt.seconds !== undefined) {
+      return new Date(createdAt.seconds * 1000);
+    }
+    return new Date(createdAt);
+  }
+
   function buildCard(req) {
     const urgencyClass = `u${req.urgency}`;
+    
+    // SLA and elapsed time calculations
+    const createdDate = parseDate(req.createdAt);
+    const minutesOpen = Math.floor((new Date() - createdDate) / 60000);
+    const isSlaViolation = req.status === "Open" && req.urgency === 5 && minutesOpen >= 5;
+    
+    let durationText = "";
+    if (req.status !== "Resolved") {
+      const minutes = Math.max(0, minutesOpen);
+      durationText = `<span class="d-inline-block text-muted fw-semibold" style="font-size:0.72rem;" title="Time elapsed since request creation"><i class="bi bi-clock me-1"></i>${req.status} for ${minutes}m</span>`;
+    }
+
+    const slaBadge = isSlaViolation
+      ? `<span class="badge-sla ms-2"><i class="bi bi-exclamation-triangle-fill"></i> SLA EXCEEDED</span>`
+      : "";
 
     const volunteerHtml = req.matchedVolunteer
       ? `<div class="volunteer-chip">
@@ -296,13 +351,37 @@ if (isDashboardPage) {
       )
       .join("");
 
+    const timelineHtml = req.timeline && req.timeline.length > 0
+      ? `<div class="mt-2 pt-2 border-top border-secondary-subtle">
+           <a class="meta d-inline-flex align-items-center" data-bs-toggle="collapse" href="#timeline-${req.id}" role="button" aria-expanded="false" aria-controls="timeline-${req.id}" style="font-size:0.72rem; color: var(--text-muted); text-decoration:none;">
+             <i class="bi bi-clock-history me-1"></i>View Action Log (${req.timeline.length})
+           </a>
+           <div class="collapse mt-2" id="timeline-${req.id}">
+             <div class="timeline-container p-0 m-0" style="padding-left:1rem !important; font-size:0.72rem;">
+               ${req.timeline.map(t => {
+                 const time = new Date(t.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                 return `
+                   <div class="timeline-event mb-1 pb-1" style="margin-bottom:0.4rem !important; border-bottom: 1px dashed rgba(255,255,255,0.05);">
+                     <span class="timeline-event-time" style="font-size:0.68rem; display:inline;">[${time}]</span>
+                     <span class="timeline-event-note" style="color:var(--text-muted); font-size:0.72rem;">${t.note}</span>
+                   </div>
+                 `;
+               }).join("")}
+             </div>
+           </div>
+         </div>`
+      : "";
+
     return `
-      <div class="request-card urgency-${req.urgency}" id="card-${req.id}">
-        <div class="d-flex align-items-start justify-content-between gap-2 mb-2">
+      <div class="request-card urgency-${req.urgency} ${isSlaViolation ? 'sla-violation' : ''}" id="card-${req.id}">
+        <div class="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
           <span class="badge-category">${getCategoryWithIcon(req.category)}</span>
-          <span class="badge-urgency ${urgencyClass}">
-            ⚡ ${urgencyLabel(req.urgency)}
-          </span>
+          <div class="d-flex align-items-center">
+            <span class="badge-urgency ${urgencyClass}">
+              ⚡ ${urgencyLabel(req.urgency)}
+            </span>
+            ${slaBadge}
+          </div>
         </div>
         <p class="description mb-2">
           ${req.description}
@@ -322,14 +401,18 @@ if (isDashboardPage) {
           <i class="bi bi-map me-1"></i>Hub: ${req.zone}
         </div>
         ${volunteerHtml}
-        <div class="d-flex align-items-center gap-2 mt-2">
-          <label for="status-${req.id}" class="meta mb-0">Status:</label>
-          <select
-            id="status-${req.id}"
-            class="status-select"
-            data-id="${req.id}"
-          >${optionsHtml}</select>
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2">
+          <div class="d-flex align-items-center gap-2">
+            <label for="status-${req.id}" class="meta mb-0">Status:</label>
+            <select
+              id="status-${req.id}"
+              class="status-select"
+              data-id="${req.id}"
+            >${optionsHtml}</select>
+          </div>
+          ${durationText}
         </div>
+        ${timelineHtml}
       </div>
     `;
   }
@@ -399,6 +482,43 @@ if (isDashboardPage) {
     renderRequests(filtered);
   }
 
+  function updateInventoryUI(inventory) {
+    const categories = ["Food", "Medical", "Shelter", "Other"];
+    categories.forEach(cat => {
+      const countEl = document.getElementById(`inv-${cat}-count`);
+      const cardEl = document.getElementById(`inv-${cat}-card`);
+      if (countEl && cardEl) {
+        const count = inventory[cat] !== undefined ? inventory[cat] : 0;
+        countEl.textContent = count;
+        
+        // Reset classes
+        cardEl.className = "p-3 rounded border border-secondary d-flex justify-content-between align-items-center";
+        countEl.className = "fs-4 fw-extrabold text-white mt-1";
+        
+        // Check levels
+        if (count === 0) {
+          cardEl.classList.add("out-of-stock-card");
+          countEl.classList.add("out-of-stock-count");
+        } else if (count < 10) {
+          cardEl.classList.add("low-stock-card");
+          countEl.classList.add("low-stock-count");
+        }
+      }
+    });
+  }
+
+  async function loadInventory() {
+    try {
+      const res = await fetch(`${API_BASE}/api/inventory`);
+      if (res.ok) {
+        const data = await res.json();
+        updateInventoryUI(data.inventory);
+      }
+    } catch (err) {
+      console.error("Error loading inventory:", err);
+    }
+  }
+
   async function loadRequests() {
     loadingState.classList.remove("d-none");
     kanbanBoard.classList.add("d-none");
@@ -424,6 +544,8 @@ if (isDashboardPage) {
         allVolunteers = volData.volunteers || [];
         applyVolunteerFilters();
       }
+
+      await loadInventory();
 
       loadingState.classList.add("d-none");
       kanbanBoard.classList.remove("d-none");
@@ -530,7 +652,55 @@ if (isDashboardPage) {
     });
   });
 
+  // ── Restock Form Submitter ──────────────────────────────────
+  const restockForm = document.getElementById("restock-form");
+  if (restockForm) {
+    restockForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const category = document.getElementById("restock-category").value;
+      const quantity = parseInt(document.getElementById("restock-qty").value, 10);
+      
+      try {
+        const res = await fetch(`${API_BASE}/api/inventory/restock`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ category, quantity })
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          updateInventoryUI(data.inventory);
+          
+          // Hide Bootstrap Modal
+          const modalEl = document.getElementById("restock-modal");
+          const modal = bootstrap.Modal.getInstance(modalEl);
+          if (modal) {
+            modal.hide();
+          } else {
+            // Trigger close button click as fallback
+            const closeBtn = modalEl.querySelector('[data-bs-dismiss="modal"]');
+            if (closeBtn) closeBtn.click();
+          }
+          restockForm.reset();
+        } else {
+          const err = await res.json();
+          alert("Error restocking: " + err.error);
+        }
+      } catch (err) {
+        console.error("Restock request failed:", err);
+      }
+    });
+  }
+
   refreshBtn.addEventListener("click", loadRequests);
 
+  // Initial load
   loadRequests();
+
+  // Periodic rendering loop (every 10 seconds) to update timers and SLA checks in real-time
+  setInterval(() => {
+    if (allRequests.length > 0) {
+      applyFilters();
+    }
+  }, 10000);
 }
