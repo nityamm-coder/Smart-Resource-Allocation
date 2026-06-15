@@ -71,8 +71,9 @@ During natural or man-made disasters (e.g., floods, earthquakes, industrial acci
 6. **Offline SMS Simulator:** Integrates an SMS parser that uses Gemini to translate and map raw text SMS inputs into structured requests.
 7. **Rate Limiting & Client-Side Counter:** Prevents API abuse and flood submissions. When rate limits are reached, clients see an active countdown warning banner showing when they can submit again.
 8. **WhatsApp Quick-Connect:** One-click button allows coordinators to start a pre-filled WhatsApp conversation directly with matched volunteers.
-9. **One-Click GPS Geolocation:** Victims can share their real-time coordinates using their device's GPS, making physical location mapping instant and reducing keying time.
-10. **Fully Responsive Layout:** Fully styled for optimal layout rendering on desktop, tablets, and smartphones.
+9. **One-Click GPS Geolocation & Geocoding:** Victims can share their real-time coordinates using their device's GPS. The system automatically performs a reverse-geocoding lookup to translate raw numbers into a human-readable city/state/locality string (e.g. `Shahapur, Maharashtra`), with a silent offline fallback to raw coordinates.
+10. **Interactive Google Maps Links:** The NGO Kanban dashboard dynamically parses coordinates inside requests, replacing messy, raw URL text with responsive, crimson glassmorphic button shortcuts labeled "Open in Google Maps".
+11. **Fully Responsive Layout:** Fully styled for optimal layout rendering on desktop, tablets, and smartphones.
 
 ---
 
