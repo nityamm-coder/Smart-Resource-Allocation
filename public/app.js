@@ -257,6 +257,48 @@ if (isIndexPage) {
     }
   }
 
+  // ── GPS Geolocation handler ──────────────────────────────────
+  const gpsBtn = document.getElementById("gps-btn");
+  if (gpsBtn) {
+    gpsBtn.addEventListener("click", () => {
+      const addressField = document.getElementById("address");
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser. Please type your address manually.");
+        addressField.focus();
+        return;
+      }
+
+      gpsBtn.disabled = true;
+      const originalHtml = gpsBtn.innerHTML;
+      gpsBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" style="width:0.85rem; height:0.85rem;" role="status"></span>Locating...`;
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          addressField.value = `GPS: Lat ${lat.toFixed(6)}, Lng ${lng.toFixed(6)} (https://maps.google.com/?q=${lat},${lng})`;
+          gpsBtn.disabled = false;
+          gpsBtn.innerHTML = `<i class="bi bi-check-lg text-success me-1"></i>Shared`;
+          setTimeout(() => {
+            gpsBtn.innerHTML = originalHtml;
+          }, 3000);
+        },
+        (error) => {
+          console.error("GPS Error:", error);
+          gpsBtn.disabled = false;
+          gpsBtn.innerHTML = originalHtml;
+          alert("Unable to retrieve location automatically. Please enter your address manually.");
+          addressField.focus();
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0
+        }
+      );
+    });
+  }
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -271,10 +313,6 @@ if (isIndexPage) {
     }
     if (!victimPhone) {
       showResult(false, "Please enter your contact phone number.");
-      return;
-    }
-    if (!address) {
-      showResult(false, "Please enter your exact location address.");
       return;
     }
     if (!zone) {
@@ -385,6 +423,52 @@ if (isDashboardPage) {
     return new Date(createdAt);
   }
 
+  function formatAddressHtml(address) {
+    if (!address) return "N/A";
+    
+    // Look for Google Maps link, e.g. (https://maps.google.com/?q=lat,lng) or similar
+    const mapsUrlRegex = /(https?:\/\/maps\.google\.com\/\?q=[^\s\)]+)/i;
+    const match = address.match(mapsUrlRegex);
+    
+    if (match) {
+      const url = match[1];
+      // Clean up the text version of address to not show the ugly URL
+      // Remove the URL portion and parentheses around it. E.g. " (https://maps.google.com/?q=...)"
+      let cleanText = address.replace(/\s*\(\s*https?:\/\/maps\.google\.com\/\?q=[^\s\)]+\s*\)/gi, "");
+      // Just in case there are no parentheses around the URL
+      cleanText = cleanText.replace(mapsUrlRegex, "");
+      cleanText = cleanText.trim();
+      
+      return `
+        <span>${cleanText || "GPS Location"}</span>
+        <div class="mt-1">
+          <a href="${url}" target="_blank" class="btn-maps">
+            <i class="bi bi-geo-alt-fill"></i> Open in Google Maps
+          </a>
+        </div>
+      `;
+    }
+    
+    // Fallback if there is some other URL, but not Google Maps
+    const genericUrlRegex = /(https?:\/\/[^\s]+)/i;
+    const genericMatch = address.match(genericUrlRegex);
+    if (genericMatch) {
+      const url = genericMatch[1];
+      let cleanText = address.replace(url, "").trim();
+      cleanText = cleanText.replace(/\(\s*\)/g, "").trim();
+      return `
+        <span>${cleanText || "External Link"}</span>
+        <div class="mt-1">
+          <a href="${url}" target="_blank" class="btn-maps" style="background: rgba(99, 102, 241, 0.15); border-color: rgba(99, 102, 241, 0.3); color: #c7d2fe !important;">
+            <i class="bi bi-box-arrow-up-right"></i> Open Link
+          </a>
+        </div>
+      `;
+    }
+    
+    return address;
+  }
+
   function buildCard(req) {
     const urgencyClass = `u${req.urgency}`;
     const sourceClass = req.source === "SMS" ? "sms" : "web";
@@ -468,7 +552,7 @@ if (isDashboardPage) {
           }
         </p>
         <div class="meta mb-1">
-          <i class="bi bi-geo-alt-fill text-danger me-1"></i><strong>Address:</strong> ${req.address || "N/A"}
+          <i class="bi bi-geo-alt-fill text-danger me-1"></i><strong>Address:</strong> ${formatAddressHtml(req.address)}
         </div>
         <div class="meta mb-1">
           <i class="bi bi-telephone-fill text-primary me-1"></i><strong>Contact:</strong> <a href="tel:${req.victimPhone}">${req.victimPhone || "N/A"}</a>

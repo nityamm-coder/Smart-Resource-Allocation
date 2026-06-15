@@ -288,12 +288,13 @@ function matchVolunteer(category, zone, dynamicVolunteersList = volunteers) {
  */
 app.post("/api/submit", submitLimiter, async (req, res) => {
   const { description, zone, address, victimPhone } = req.body;
+  const finalAddress = (address && address.trim()) ? address.trim() : "Location details to be verified via call";
 
-  // Basic validation — make sure we got something to work with
-  if (!description || !zone || !address || !victimPhone) {
+  // Basic validation — make sure we got something to work with (address is optional now)
+  if (!description || !zone || !victimPhone) {
     return res
       .status(400)
-      .json({ error: "Please provide description, zone, address, and your contact phone number." });
+      .json({ error: "Please provide description, zone, and your contact phone number." });
   }
 
   try {
@@ -337,7 +338,7 @@ Example output:
     const requestRecord = {
       description,
       zone,
-      address,
+      address: finalAddress,
       victimPhone,
       category,
       urgency: Number(urgency),

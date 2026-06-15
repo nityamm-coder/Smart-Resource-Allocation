@@ -71,7 +71,8 @@ During natural or man-made disasters (e.g., floods, earthquakes, industrial acci
 6. **Offline SMS Simulator:** Integrates an SMS parser that uses Gemini to translate and map raw text SMS inputs into structured requests.
 7. **Rate Limiting & Client-Side Counter:** Prevents API abuse and flood submissions. When rate limits are reached, clients see an active countdown warning banner showing when they can submit again.
 8. **WhatsApp Quick-Connect:** One-click button allows coordinators to start a pre-filled WhatsApp conversation directly with matched volunteers.
-9. **Fully Responsive Layout:** Fully styled for optimal layout rendering on desktop, tablets, and smartphones.
+9. **One-Click GPS Geolocation:** Victims can share their real-time coordinates using their device's GPS, making physical location mapping instant and reducing keying time.
+10. **Fully Responsive Layout:** Fully styled for optimal layout rendering on desktop, tablets, and smartphones.
 
 ---
 

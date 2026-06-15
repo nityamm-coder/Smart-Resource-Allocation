@@ -76,11 +76,16 @@
 
             <!-- Victim Address -->
             <div class="mb-3">
-              <label for="address">Exact Address / Specific Location</label>
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <label for="address" class="mb-0">Exact Address / Location (Optional)</label>
+                <button type="button" id="gps-btn" class="btn btn-outline-info btn-sm py-0 px-2" style="font-size: 0.75rem; border-radius: 4px;">
+                  <i class="bi bi-geo-alt-fill me-1"></i>Share Location
+                </button>
+              </div>
               <textarea id="address" name="address" class="form-control" rows="2"
-                placeholder="e.g. Flat 202, Building B, Tarmale Nagar, Vasind, Maharashtra" required></textarea>
-              <div class="form-text text-muted mt-1">
-                Include landmarks, building name, flat number, etc.
+                placeholder="e.g. Flat 202, Building B, Tarmale Nagar, Vasind, Maharashtra (Or click Share Location)"></textarea>
+              <div class="form-text text-muted mt-1" id="address-help">
+                Include landmarks, or click 'Share Location' to grab coordinates automatically.
               </div>
             </div>
 

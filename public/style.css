@@ -1485,5 +1485,36 @@ footer {
   }
 }
 
+/* ── Google Maps link badge-button in request card ── */
+.btn-maps {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5 !important;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  transition: all 0.2s ease-in-out;
+  text-decoration: none !important;
+  margin-top: 0.4rem;
+}
+
+.btn-maps:hover {
+  background: rgba(239, 68, 68, 0.28);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fecaca !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+}
+
+.btn-maps i {
+  font-size: 0.85rem;
+}
+
 
 
