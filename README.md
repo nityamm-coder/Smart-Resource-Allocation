@@ -146,8 +146,6 @@ GEMINI_API_KEY=your_gemini_api_key_here
 FIREBASE_SERVICE_ACCOUNT_KEY='{"type": "service_account", "project_id": "your-project", "private_key_id": "...", "private_key": "...", "client_email": "...", ...}'
 ```
 
-> 💡 *Note: To generate a Firebase Service Account key, go to your Firebase Console -> Project Settings -> Service Accounts -> Generate New Private Key.*
-
 ### 4. Running the Project
 * **Development Mode (with auto-reload):**
   ```bash
