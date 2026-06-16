@@ -74,7 +74,8 @@ During natural or man-made disasters (e.g., floods, earthquakes, industrial acci
 9. **One-Click GPS Geolocation & Geocoding:** Victims can share their real-time coordinates using their device's GPS. The system automatically performs a reverse-geocoding lookup to translate raw numbers into a human-readable city/state/locality string (e.g. `Shahapur, Maharashtra`), with a silent offline fallback to raw coordinates.
 10. **Interactive Dark Mode Map View:** Toggle seamlessly between the Kanban Board and a live interactive map powered by Leaflet.js and CartoDB Dark Matter. It automatically plots all active requests as custom pulsating markers colored by status (Purple for Open, Amber/Orange for In Progress). Higher urgency requests pulse at faster intervals to highlight critical areas.
 11. **Map-Based Status Updates:** Click on any marker on the map to inspect full details, contact details, assigned volunteer status, and change request status directly from the map popup.
-12. **Fully Responsive Layout:** Fully styled for optimal layout rendering on desktop, tablets, and smartphones.
+12. **Dynamic Hero Section:** A split grid landing layout featuring a custom blinking typewriter text effect cycling through critical resource types ("Food Packs", "Medical Aid", "Emergency Shelter", "Critical Supplies") and an animated CSS emergency radar beacon with rotating sweeps and pulsating coordinate nodes.
+13. **Fully Responsive Layout:** Fully styled for optimal layout rendering on desktop, tablets, and smartphones.
 
 ---
 

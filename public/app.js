@@ -31,6 +31,44 @@ if (isIndexPage) {
   const resultBanner = document.getElementById("result-banner");
   const placeholderContent = document.getElementById("placeholder-content");
 
+  // ── Typewriter Animation Logic ──
+  const typewriterEl = document.getElementById("typewriter-text");
+  if (typewriterEl) {
+    const words = ["Food Packs", "Medical Aid", "Emergency Shelter", "Critical Supplies"];
+    let wordIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    
+    function type() {
+      const currentWord = words[wordIndex];
+      if (isDeleting) {
+        typewriterEl.textContent = currentWord.substring(0, charIndex - 1);
+        charIndex--;
+      } else {
+        typewriterEl.textContent = currentWord.substring(0, charIndex + 1);
+        charIndex++;
+      }
+      
+      let typeSpeed = 100;
+      if (isDeleting) {
+        typeSpeed = 50;
+      }
+      
+      if (!isDeleting && charIndex === currentWord.length) {
+        typeSpeed = 2000;
+        isDeleting = true;
+      } else if (isDeleting && charIndex === 0) {
+        isDeleting = false;
+        wordIndex = (wordIndex + 1) % words.length;
+        typeSpeed = 500;
+      }
+      
+      setTimeout(type, typeSpeed);
+    }
+    
+    setTimeout(type, 500);
+  }
+
   /**
    * setLoading
    * Toggles the submit button between its normal state and a

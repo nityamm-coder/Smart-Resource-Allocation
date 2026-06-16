@@ -100,7 +100,6 @@ h1, h2, h3, h4, h5, h6 {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(124, 58, 237, 0.05) 100%);
   border-bottom: 1px solid var(--glass-border);
   padding: 4.5rem 2rem 3.5rem;
-  text-align: center;
   margin-bottom: 3rem;
   position: relative;
   overflow: hidden;
@@ -131,8 +130,8 @@ h1, h2, h3, h4, h5, h6 {
 .hero-section p {
   font-size: 1.1rem;
   color: var(--text-muted);
-  max-width: 560px;
-  margin: 0 auto;
+  max-width: 580px;
+  margin: 0;
   position: relative;
   z-index: 1;
 }
@@ -1686,4 +1685,171 @@ footer {
 .leaflet-popup-content select option {
   background: #0f172a;
   color: white;
+}
+
+/* ── Dynamic Hero Section Styles ── */
+.typewriter-cursor {
+  animation: blink-cursor 0.75s step-end infinite;
+  color: var(--brand-primary);
+  font-weight: 400;
+  margin-left: 2px;
+}
+
+@keyframes blink-cursor {
+  from, to { color: transparent }
+  50% { color: var(--brand-primary); }
+}
+
+/* Radar Graphic Container */
+.radar-illustration-container {
+  padding: 10px;
+  background: rgba(30, 41, 59, 0.25);
+  border: 1px solid var(--glass-border);
+  border-radius: 24px;
+  box-shadow: var(--glass-glow);
+  backdrop-filter: blur(10px);
+}
+
+/* Radar Beacon Canvas styling */
+.radar-illustration {
+  position: relative;
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(15, 23, 42, 0.7) 0%, rgba(2, 6, 23, 0.9) 100%);
+  border: 2px solid rgba(99, 102, 241, 0.2);
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: inset 0 0 20px rgba(99, 102, 241, 0.15);
+}
+
+/* Sweep Line animation */
+.radar-sweep {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: conic-gradient(from 0deg, rgba(99, 102, 241, 0.25) 0deg, rgba(99, 102, 241, 0.05) 90deg, transparent 180deg);
+  border-radius: 50%;
+  transform-origin: center;
+  animation: rotate-sweep 4s linear infinite;
+  z-index: 1;
+}
+
+@keyframes rotate-sweep {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Grid overlay coordinates */
+.radar-illustration::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: rgba(99, 102, 241, 0.12);
+  z-index: 2;
+}
+
+.radar-illustration::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  background: rgba(99, 102, 241, 0.12);
+  z-index: 2;
+}
+
+/* Concentric Rings */
+.radar-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 1px dashed rgba(99, 102, 241, 0.15);
+  border-radius: 50%;
+  z-index: 2;
+}
+
+.ring-1 { width: 70px; height: 70px; }
+.ring-2 { width: 140px; height: 140px; }
+.ring-3 { width: 210px; height: 210px; }
+
+/* Radar Glowing Nodes */
+.radar-node {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  z-index: 3;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+}
+
+/* Node Positions & Types */
+.node-1.Medical {
+  top: 35%;
+  left: 25%;
+  background-color: var(--danger);
+  box-shadow: 0 0 12px var(--danger);
+  animation: float-node 3s ease-in-out infinite alternate, node-pulse-anim 1s infinite alternate;
+}
+
+.node-2.Food {
+  top: 65%;
+  left: 68%;
+  background-color: var(--success);
+  box-shadow: 0 0 12px var(--success);
+  animation: float-node 4s ease-in-out infinite alternate-reverse, node-pulse-anim 1.4s infinite alternate;
+}
+
+.node-3.Shelter {
+  top: 22%;
+  left: 72%;
+  background-color: var(--warning);
+  box-shadow: 0 0 12px var(--warning);
+  animation: float-node 3.5s ease-in-out infinite alternate, node-pulse-anim 1.2s infinite alternate;
+}
+
+.center-node {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) !important;
+  width: 12px;
+  height: 12px;
+  background-color: white;
+  box-shadow: 0 0 16px var(--brand-primary);
+  border: 2px solid var(--brand-primary);
+}
+
+@keyframes float-node {
+  0% { transform: translateY(0) translateX(0); }
+  100% { transform: translateY(-8px) translateX(4px); }
+}
+
+@keyframes node-pulse-anim {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.3); opacity: 1; }
+}
+
+/* Responsive updates for split hero */
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 3rem 1.5rem 2rem !important;
+  }
+  .hero-title {
+    font-size: 2rem !important;
+    text-align: center;
+  }
+  .hero-desc {
+    text-align: center;
+    margin: 0 auto;
+    font-size: 0.95rem !important;
+  }
+  .radar-illustration-container {
+    margin-top: 1rem;
+  }
 }
