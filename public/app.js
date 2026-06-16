@@ -399,6 +399,14 @@ if (isDashboardPage) {
   const volunteersList = document.getElementById("volunteers-list");
   const volunteerSearchInput = document.getElementById("volunteer-search");
 
+  const btnViewBoard = document.getElementById("btn-view-board");
+  const btnViewMap = document.getElementById("btn-view-map");
+  const mapViewContainer = document.getElementById("map-view-container");
+
+  let currentView = "board"; // "board" or "map"
+  let map = null;
+  let mapMarkers = [];
+
   // Column containers (one per status)
   const colOpen        = document.getElementById("col-open");
   const colProgress    = document.getElementById("col-progress");
@@ -683,6 +691,10 @@ if (isDashboardPage) {
     }
 
     renderRequests(filtered);
+
+    if (currentView === "map") {
+      updateMapMarkers(filtered);
+    }
   }
 
   function updateInventoryUI(inventory) {
@@ -725,6 +737,7 @@ if (isDashboardPage) {
   async function loadRequests() {
     loadingState.classList.remove("d-none");
     kanbanBoard.classList.add("d-none");
+    mapViewContainer.classList.add("d-none");
     errorState.classList.add("d-none");
 
     try {
@@ -751,7 +764,16 @@ if (isDashboardPage) {
       await loadInventory();
 
       loadingState.classList.add("d-none");
-      kanbanBoard.classList.remove("d-none");
+      if (currentView === "board") {
+        kanbanBoard.classList.remove("d-none");
+      } else {
+        mapViewContainer.classList.remove("d-none");
+        initMap();
+        setTimeout(() => {
+          map.invalidateSize();
+          applyFilters();
+        }, 100);
+      }
     } catch (err) {
       loadingState.classList.add("d-none");
       errorState.classList.remove("d-none");
@@ -935,6 +957,194 @@ if (isDashboardPage) {
           alert(`Error clearing resolved requests: ${err.message}`);
         }
       }
+    });
+  }
+
+  // ── Leaflet Map View Functions ──
+  function parseCoordinates(req) {
+    if (req.address) {
+      const gpsRegex = /q=(-?\d+\.\d+),(-?\d+\.\d+)/;
+      const match = req.address.match(gpsRegex);
+      if (match) {
+        return [parseFloat(match[1]), parseFloat(match[2])];
+      }
+    }
+    
+    // Fallback coordinates based on zone
+    const zoneCoords = {
+      "Vasind": [19.4038, 73.2642],
+      "Kalyan": [19.2403, 73.1305],
+      "Thane": [19.2183, 72.9781],
+      "Mumbai Central": [18.9696, 72.8193]
+    };
+    
+    const center = zoneCoords[req.zone] || [19.2183, 72.9781];
+    
+    // Generate deterministic scatter/jitter based on Request ID
+    let hash = 0;
+    const idStr = req.id || "";
+    for (let i = 0; i < idStr.length; i++) {
+      hash = idStr.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const pseudoRandomLat = ((hash & 0xFF) / 255 - 0.5) * 0.012;
+    const pseudoRandomLng = (((hash >> 8) & 0xFF) / 255 - 0.5) * 0.012;
+    
+    return [center[0] + pseudoRandomLat, center[1] + pseudoRandomLng];
+  }
+
+  function initMap() {
+    if (map) return;
+    
+    // Center initially around Thane/Kalyan
+    map = L.map("map-element").setView([19.23, 73.05], 11);
+    
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20
+    }).addTo(map);
+
+    // Dynamic listener for dropdown changes in popup
+    map.on('popupopen', (e) => {
+      const selectEl = e.popup.getElement().querySelector('.map-status-select');
+      if (selectEl) {
+        selectEl.addEventListener('change', async (event) => {
+          const id = event.target.dataset.id;
+          const status = event.target.value;
+          await updateStatus(id, status);
+        });
+      }
+    });
+  }
+
+  window.deleteFromMap = async function(id) {
+    if (confirm("Are you sure you want to delete this request permanently?")) {
+      await deleteRequest(id);
+    }
+  };
+
+  function updateMapMarkers(requests) {
+    if (!map) return;
+    
+    // Remove old markers
+    mapMarkers.forEach(m => map.removeLayer(m));
+    mapMarkers = [];
+    
+    // Filter out resolved requests - only display Open and In Progress
+    const activeRequests = requests.filter(r => r.status !== "Resolved");
+    
+    if (activeRequests.length === 0) return;
+    
+    const bounds = [];
+    
+    activeRequests.forEach(req => {
+      const coords = parseCoordinates(req);
+      bounds.push(coords);
+      
+      const statusClass = req.status.toLowerCase().replace(/\s+/g, '-');
+      const markerHtml = `
+        <div class="map-marker urgency-${req.urgency} status-${statusClass}">
+          <div class="marker-pulse"></div>
+          <div class="marker-dot"></div>
+        </div>
+      `;
+      
+      const icon = L.divIcon({
+        html: markerHtml,
+        className: 'custom-div-icon',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10]
+      });
+      
+      const marker = L.marker(coords, { icon: icon });
+      
+      const createdDate = parseDate(req.createdAt);
+      const timeStr = createdDate.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' });
+      
+      const sourceBadge = req.source === "SMS" 
+        ? `<span class="badge bg-secondary text-white ms-1" style="font-size:0.65rem; padding: 0.15rem 0.35rem; vertical-align:middle;">📟 SMS</span>` 
+        : `<span class="badge bg-primary text-white ms-1" style="font-size:0.65rem; padding: 0.15rem 0.35rem; vertical-align:middle;">🌐 Web</span>`;
+         
+      const urgencyLabels = { 1: "Low", 2: "Minor", 3: "Moderate", 4: "High", 5: "Critical" };
+      const urgencyBadge = `<span class="badge bg-danger ms-1" style="font-size:0.65rem; padding: 0.15rem 0.35rem; vertical-align:middle;">⚡ ${urgencyLabels[req.urgency] || req.urgency}</span>`;
+      const categoryWithIcon = getCategoryWithIcon(req.category);
+      
+      let volunteerText = "None assigned";
+      if (req.matchedVolunteer) {
+        volunteerText = `${req.matchedVolunteer.name} (<a href="tel:${req.matchedVolunteer.phone}" style="color:var(--brand-primary); text-decoration:none;">${req.matchedVolunteer.phone}</a>)`;
+      }
+      
+      let translationText = "";
+      if (req.detectedLanguage && req.detectedLanguage.toLowerCase() !== "english" && req.translatedDescription) {
+        translationText = `
+          <div style="font-size:0.75rem; color:#a5b4fc; background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2); border-left:3px solid var(--brand-primary); padding:6px; border-radius:6px; margin:6px 0;">
+            <i class="bi bi-translate"></i> Translated (${req.detectedLanguage}): "${req.translatedDescription}"
+          </div>
+        `;
+      }
+      
+      const addressHtml = req.address || "N/A";
+      
+      const popupHtml = `
+        <div style="min-width: 210px; color: #fff;">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <strong style="font-size: 0.95rem; color: #fff;">${categoryWithIcon}</strong>
+            <div>${sourceBadge}${urgencyBadge}</div>
+          </div>
+          <div class="text-muted" style="font-size: 0.7rem; margin-bottom: 6px;">Reported: ${timeStr}</div>
+          <p style="margin: 4px 0 8px 0; font-size: 0.82rem; color: #e2e8f0; line-height: 1.4;">${req.description}</p>
+          ${translationText}
+          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:4px;"><i class="bi bi-geo-alt-fill text-danger me-1"></i><strong>Address:</strong> ${addressHtml}</div>
+          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:4px;"><i class="bi bi-telephone-fill text-success me-1"></i><strong>Contact:</strong> <a href="tel:${req.victimPhone}" style="color:var(--brand-primary); text-decoration:none;">${req.victimPhone}</a></div>
+          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:8px;"><i class="bi bi-person-check-fill text-primary me-1"></i><strong>Volunteer:</strong> ${volunteerText}</div>
+          
+          <div class="d-flex align-items-center gap-2 mt-2 pt-2 border-top border-secondary">
+            <label style="font-size:0.72rem; color:#94a3b8; margin-bottom:0;">Status:</label>
+            <select class="map-status-select" data-id="${req.id}">
+              <option value="Open" ${req.status === "Open" ? "selected" : ""}>Open</option>
+              <option value="In Progress" ${req.status === "In Progress" ? "selected" : ""}>In Progress</option>
+              <option value="Resolved" ${req.status === "Resolved" ? "selected" : ""}>Resolved</option>
+            </select>
+            <button class="btn btn-link text-danger p-0 border-0 ms-auto" onclick="deleteFromMap('${req.id}')" title="Delete request" style="text-decoration:none;"><i class="bi bi-trash-fill"></i></button>
+          </div>
+        </div>
+      `;
+      
+      marker.bindPopup(popupHtml);
+      marker.addTo(map);
+      mapMarkers.push(marker);
+    });
+    
+    if (bounds.length > 0) {
+      map.fitBounds(bounds, { padding: [40, 40] });
+    }
+  }
+
+  // ── View Toggle Events ──
+  if (btnViewBoard && btnViewMap) {
+    btnViewBoard.addEventListener("click", () => {
+      if (currentView === "board") return;
+      currentView = "board";
+      btnViewBoard.classList.add("active");
+      btnViewMap.classList.remove("active");
+      mapViewContainer.classList.add("d-none");
+      kanbanBoard.classList.remove("d-none");
+      applyFilters();
+    });
+
+    btnViewMap.addEventListener("click", () => {
+      if (currentView === "map") return;
+      currentView = "map";
+      btnViewMap.classList.add("active");
+      btnViewBoard.classList.remove("active");
+      kanbanBoard.classList.add("d-none");
+      mapViewContainer.classList.remove("d-none");
+      
+      initMap();
+      setTimeout(() => {
+        map.invalidateSize();
+        applyFilters();
+      }, 100);
     });
   }
 
