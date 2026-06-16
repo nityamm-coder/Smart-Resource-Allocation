@@ -20,6 +20,49 @@ const isDashboardPage = document.getElementById("kanban-board")  !== null;
 // requests are relative (no hardcoded host).
 const API_BASE = "";
 
+// ── Custom Toast Notification helper ─────────────────────────
+function showToast(message, type = "info") {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+
+  const toast = document.createElement("div");
+  toast.className = `custom-toast ${type}`;
+
+  let icon = '<i class="bi bi-info-circle toast-icon"></i>';
+  if (type === "success") icon = '<i class="bi bi-check-circle-fill toast-icon"></i>';
+  if (type === "danger") icon = '<i class="bi bi-exclamation-triangle-fill toast-icon"></i>';
+  if (type === "warning") icon = '<i class="bi bi-exclamation-circle-fill toast-icon"></i>';
+
+  toast.innerHTML = `
+    ${icon}
+    <div class="toast-message">${message}</div>
+    <button class="toast-close-btn"><i class="bi bi-x"></i></button>
+  `;
+
+  container.appendChild(toast);
+
+  // Trigger CSS transition
+  setTimeout(() => {
+    toast.classList.add("show");
+  }, 10);
+
+  const dismissTimer = setTimeout(() => {
+    dismissToast(toast);
+  }, 4000);
+
+  toast.querySelector(".toast-close-btn").addEventListener("click", () => {
+    clearTimeout(dismissTimer);
+    dismissToast(toast);
+  });
+}
+
+function dismissToast(toast) {
+  toast.classList.remove("show");
+  setTimeout(() => {
+    toast.remove();
+  }, 350);
+}
+
 // =============================================================
 // PAGE 1 — index.html (Request Submission Form)
 // =============================================================
@@ -301,7 +344,7 @@ if (isIndexPage) {
     gpsBtn.addEventListener("click", () => {
       const addressField = document.getElementById("address");
       if (!navigator.geolocation) {
-        alert("Geolocation is not supported by your browser. Please type your address manually.");
+        showToast("Geolocation is not supported by your browser. Please type your address manually.", "warning");
         addressField.focus();
         return;
       }
@@ -349,7 +392,7 @@ if (isIndexPage) {
           console.error("GPS Error:", error);
           gpsBtn.disabled = false;
           gpsBtn.innerHTML = originalHtml;
-          alert("Unable to retrieve location automatically. Please enter your address manually.");
+          showToast("Unable to retrieve location automatically. Please enter your address manually.", "danger");
           addressField.focus();
         },
         {
@@ -406,6 +449,16 @@ if (isIndexPage) {
 
       showResult(true, data);
       form.reset();
+      
+      // Fire celebration confetti!
+      if (window.confetti) {
+        confetti({
+          particleCount: 80,
+          spread: 60,
+          origin: { y: 0.6 }
+        });
+      }
+      showToast("Emergency request reported successfully!", "success");
     } catch (err) {
       showResult(false, err.message);
     } finally {
@@ -890,8 +943,21 @@ if (isDashboardPage) {
       }
 
       await loadRequests();
+      
+      if (status === "Resolved") {
+        if (window.confetti) {
+          confetti({
+            particleCount: 120,
+            spread: 70,
+            origin: { y: 0.5 }
+          });
+        }
+        showToast("Request successfully resolved!", "success");
+      } else {
+        showToast(`Status updated to "${status}"`, "info");
+      }
     } catch (err) {
-      alert(`Error updating status: ${err.message}`);
+      showToast(`Error updating status: ${err.message}`, "danger");
     }
   }
 
@@ -906,8 +972,9 @@ if (isDashboardPage) {
       }
 
       await loadRequests();
+      showToast("Request permanently deleted from system.", "warning");
     } catch (err) {
-      alert(`Error deleting request: ${err.message}`);
+      showToast(`Error deleting request: ${err.message}`, "danger");
     }
   }
 
@@ -964,7 +1031,7 @@ if (isDashboardPage) {
           restockForm.reset();
         } else {
           const err = await res.json();
-          alert("Error restocking: " + err.error);
+          showToast("Error restocking: " + err.error, "danger");
         }
       } catch (err) {
         console.error("Restock request failed:", err);
@@ -991,8 +1058,9 @@ if (isDashboardPage) {
           }
           
           await loadRequests();
+          showToast("Resolved requests cleared successfully.", "success");
         } catch (err) {
-          alert(`Error clearing resolved requests: ${err.message}`);
+          showToast(`Error clearing requests: ${err.message}`, "danger");
         }
       }
     });

@@ -60,25 +60,25 @@
       <!-- ── Stats Bar ────────────────────────────────────────── -->
       <div class="row g-3 mb-4" id="stats-bar">
         <div class="col-6 col-md-3">
-          <div class="stat-card">
+          <div class="stat-card" data-tilt data-tilt-max="10">
             <div class="stat-number" id="stat-total">—</div>
             <div class="stat-label">Total Requests</div>
           </div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="stat-card">
+          <div class="stat-card" data-tilt data-tilt-max="10">
             <div class="stat-number text-danger" id="stat-open">—</div>
             <div class="stat-label">Open</div>
           </div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="stat-card">
+          <div class="stat-card" data-tilt data-tilt-max="10">
             <div class="stat-number text-warning" id="stat-progress">—</div>
             <div class="stat-label">In Progress</div>
           </div>
         </div>
         <div class="col-6 col-md-3">
-          <div class="stat-card">
+          <div class="stat-card" data-tilt data-tilt-max="10">
             <div class="stat-number text-success" id="stat-resolved">—</div>
             <div class="stat-label">Resolved</div>
           </div>
@@ -166,10 +166,47 @@
         </div>
       </div>
 
-      <!-- ── Loading Spinner (visible while fetching) ──────────── -->
-      <div id="loading-state" class="text-center py-5">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p class="text-muted mt-2 mb-0" style="font-size:0.9rem;">Loading requests…</p>
+      <!-- ── Skeleton Loading State (visible while fetching) ───── -->
+      <div id="loading-state" class="row g-3 mb-4">
+        <!-- 3 Columns of Skeleton Cards -->
+        <div class="col-12 col-lg-3">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-card">
+            <div class="skeleton-line width-40"></div>
+            <div class="skeleton-line width-80"></div>
+            <div class="skeleton-line width-60"></div>
+            <div class="skeleton-line width-90"></div>
+          </div>
+          <div class="skeleton-card">
+            <div class="skeleton-line width-40"></div>
+            <div class="skeleton-line width-70"></div>
+            <div class="skeleton-line width-50"></div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-3">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-card">
+            <div class="skeleton-line width-30"></div>
+            <div class="skeleton-line width-80"></div>
+            <div class="skeleton-line width-50"></div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-3">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-card">
+            <div class="skeleton-line width-40"></div>
+            <div class="skeleton-line width-90"></div>
+            <div class="skeleton-line width-60"></div>
+          </div>
+        </div>
+        <div class="col-12 col-lg-3">
+          <div class="skeleton-header"></div>
+          <div class="skeleton-card">
+            <div class="skeleton-line width-50"></div>
+            <div class="skeleton-line width-70"></div>
+            <div class="skeleton-line width-60"></div>
+          </div>
+        </div>
       </div>
 
       <!-- ── Error Message ─────────────────────────────────────── -->
@@ -363,6 +400,9 @@
       </div>
     </div>
 
+    <!-- Toast Container for Custom Glassmorphic Notifications -->
+    <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
+
     <footer>
       Built with ❤️ for the Hackathon &nbsp;·&nbsp; Smart Resource Allocation MVP
     </footer>
@@ -371,6 +411,10 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Leaflet.js library for Map View -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Canvas Confetti CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <!-- VanillaTilt CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/vanilla-tilt@1.8.1/dist/vanilla-tilt.min.js"></script>
     <!-- Our frontend logic -->
     <script src="app.js"></script>
   </body>

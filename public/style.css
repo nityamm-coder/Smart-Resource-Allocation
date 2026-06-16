@@ -1853,3 +1853,148 @@ footer {
     margin-top: 1rem;
   }
 }
+
+/* ── Custom Glassmorphic Toast Notification System ── */
+.custom-toast {
+  min-width: 300px;
+  max-width: 400px;
+  background: rgba(15, 23, 42, 0.88) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  border-radius: 12px;
+  color: var(--text-light);
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  transform: translateX(120%);
+  transition: transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.35s;
+  opacity: 0;
+  border-left: 4px solid var(--brand-primary);
+}
+
+.custom-toast.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.custom-toast.success { border-left-color: var(--success); }
+.custom-toast.danger  { border-left-color: var(--danger); }
+.custom-toast.warning { border-left-color: var(--warning); }
+.custom-toast.info    { border-left-color: var(--brand-primary); }
+
+.toast-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.custom-toast.success .toast-icon { color: var(--success); }
+.custom-toast.danger  .toast-icon { color: var(--danger); }
+.custom-toast.warning .toast-icon { color: var(--warning); }
+.custom-toast.info    .toast-icon { color: var(--brand-primary); }
+
+.toast-message {
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.4;
+  flex-grow: 1;
+}
+
+.toast-close-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  transition: color 0.2s;
+}
+
+.toast-close-btn:hover {
+  color: white;
+}
+
+/* ── Pulsating Skeleton Loaders CSS ── */
+.skeleton-header {
+  height: 28px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  margin-bottom: 1.2rem;
+  width: 60%;
+  animation: skeleton-pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-card {
+  background: rgba(30, 41, 59, 0.25);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 1.2rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  border-left: 4px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  animation: skeleton-pulse 1.5s infinite ease-in-out;
+}
+
+.skeleton-line {
+  height: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+}
+
+.skeleton-line.width-30 { width: 30%; }
+.skeleton-line.width-40 { width: 40%; }
+.skeleton-line.width-50 { width: 50%; }
+.skeleton-line.width-60 { width: 60%; }
+.skeleton-line.width-70 { width: 70%; }
+.skeleton-line.width-80 { width: 80%; }
+.skeleton-line.width-90 { width: 90%; }
+
+@keyframes skeleton-pulse {
+  0% { opacity: 0.5; }
+  50% { opacity: 0.85; }
+  100% { opacity: 0.5; }
+}
+
+/* ── Interactive 3D Card Hover & Micro-Animations ── */
+.form-card, .stat-card, .roster-card, .how-card {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.form-card:hover, .stat-card:hover, .how-card:hover {
+  border-color: rgba(99, 102, 241, 0.35);
+}
+
+/* GPS Button hover rotate animation */
+#gps-btn i {
+  transition: transform 0.3s ease-in-out;
+}
+#gps-btn:hover i {
+  transform: rotate(15deg) scale(1.1);
+}
+
+/* Navbar button scales */
+.navbar .btn {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.navbar .btn:hover {
+  transform: scale(1.05);
+}
+
+/* Filter tab bouncy transition */
+.btn-filter {
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+.btn-filter:hover {
+  transform: translateY(-2px);
+}
+.btn-filter:active {
+  transform: translateY(0);
+}
