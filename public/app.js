@@ -497,6 +497,7 @@ if (isDashboardPage) {
   let currentView = "board"; // "board" or "map"
   let map = null;
   let mapMarkers = [];
+  let shouldFitMapBounds = true;
 
   // Column containers (one per status)
   const colOpen        = document.getElementById("col-open");
@@ -1222,7 +1223,10 @@ if (isDashboardPage) {
     });
   }
 
-  refreshBtn.addEventListener("click", loadRequests);
+  refreshBtn.addEventListener("click", () => {
+    shouldFitMapBounds = true;
+    loadRequests();
+  });
 
   const clearResolvedBtn = document.getElementById("clear-resolved-btn");
   if (clearResolvedBtn) {
@@ -1287,7 +1291,7 @@ if (isDashboardPage) {
     // Center initially around Thane/Kalyan
     map = L.map("map-element").setView([19.23, 73.05], 11);
     
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 20
@@ -1404,8 +1408,9 @@ if (isDashboardPage) {
       mapMarkers.push(marker);
     });
     
-    if (bounds.length > 0) {
+    if (shouldFitMapBounds && bounds.length > 0) {
       map.fitBounds(bounds, { padding: [40, 40] });
+      shouldFitMapBounds = false;
     }
   }
 
@@ -1429,6 +1434,7 @@ if (isDashboardPage) {
       kanbanBoard.classList.add("d-none");
       mapViewContainer.classList.remove("d-none");
       
+      shouldFitMapBounds = true;
       initMap();
       setTimeout(() => {
         map.invalidateSize();
