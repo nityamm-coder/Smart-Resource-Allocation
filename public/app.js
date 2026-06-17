@@ -652,6 +652,74 @@ if (isDashboardPage) {
          </div>`
       : "";
 
+    if (req.status === "Resolved") {
+      const timeStr = createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      const dateStr = createdDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
+      const formattedTime = `${dateStr}, ${timeStr}`;
+
+      return `
+        <div class="request-card urgency-${req.urgency} resolved-compact-card" id="card-${req.id}">
+          <div class="compact-header">
+            <p class="compact-desc">${req.description}</p>
+            <span class="compact-meta">
+              <i class="bi bi-check-circle-fill text-success" style="font-size: 0.82rem;"></i>
+              ${formattedTime}
+            </span>
+          </div>
+          
+          <div class="card-expanded-content">
+            <div class="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
+              <div>
+                <span class="badge-category">${getCategoryWithIcon(req.category)}</span>
+                ${sourceBadge}
+              </div>
+              <div class="d-flex align-items-center">
+                <span class="badge-urgency ${urgencyClass}">
+                  ⚡ ${urgencyLabel(req.urgency)}
+                </span>
+              </div>
+            </div>
+            
+            <p class="description mb-2" style="white-space: normal;">
+              ${req.description}
+              ${(req.detectedLanguage && req.detectedLanguage.toLowerCase() !== 'english' && req.translatedDescription) ? 
+                `<span class="d-block mt-2 p-2 rounded text-indigo" style="font-size: 0.82rem; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2); border-left: 4px solid var(--brand-primary); color: #c7d2fe;">
+                  <i class="bi bi-translate me-1"></i> <strong>Translated (${req.detectedLanguage}):</strong> "${req.translatedDescription}"
+                 </span>` : ''
+              }
+            </p>
+            
+            <div class="meta mb-1">
+              <i class="bi bi-geo-alt-fill text-danger me-1"></i><strong>Address:</strong> ${formatAddressHtml(req.address)}
+            </div>
+            <div class="meta mb-1">
+              <i class="bi bi-telephone-fill text-primary me-1"></i><strong>Contact:</strong> <a href="tel:${req.victimPhone}">${req.victimPhone || "N/A"}</a>
+            </div>
+            <div class="meta mb-2">
+              <i class="bi bi-map me-1"></i>Hub: ${req.zone}
+            </div>
+            
+            ${volunteerHtml}
+            
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2">
+              <div class="d-flex align-items-center gap-2">
+                <label for="status-${req.id}" class="meta mb-0">Status:</label>
+                <select
+                  id="status-${req.id}"
+                  class="status-select"
+                  data-id="${req.id}"
+                >${optionsHtml}</select>
+                <button class="delete-btn" data-id="${req.id}" title="Delete Request Permanently">
+                  <i class="bi bi-trash3-fill"></i>
+                </button>
+              </div>
+            </div>
+            ${timelineHtml}
+          </div>
+        </div>
+      `;
+    }
+
     return `
       <div class="request-card urgency-${req.urgency} ${isSlaViolation ? 'sla-violation' : ''}" id="card-${req.id}">
         <div class="d-flex align-items-center justify-content-between gap-2 mb-2 flex-wrap">
@@ -708,6 +776,19 @@ if (isDashboardPage) {
     const inProgress = requests.filter((r) => r.status === "In Progress");
     const resolved   = requests.filter((r) => r.status === "Resolved");
 
+    // Sort resolved requests: most recently resolved first
+    resolved.sort((a, b) => {
+      const timeA = (a.timeline || [])
+        .filter(t => t.status === "Resolved")
+        .map(t => new Date(t.timestamp).getTime())
+        .pop() || parseDate(a.createdAt).getTime();
+      const timeB = (b.timeline || [])
+        .filter(t => t.status === "Resolved")
+        .map(t => new Date(t.timestamp).getTime())
+        .pop() || parseDate(b.createdAt).getTime();
+      return timeB - timeA;
+    });
+
     // ── Update stats bar (using allRequests total) ─────────────
     const fullOpen = allRequests.filter(r => r.status === "Open");
     const fullProgress = allRequests.filter(r => r.status === "In Progress");
@@ -736,6 +817,16 @@ if (isDashboardPage) {
     fillColumn(colOpen,     open);
     fillColumn(colProgress, inProgress);
     fillColumn(colResolved, resolved);
+
+    // Click event handler to expand/collapse resolved compact cards
+    document.querySelectorAll(".resolved-compact-card").forEach((card) => {
+      card.addEventListener("click", (e) => {
+        if (e.target.closest("select") || e.target.closest("button") || e.target.closest("a") || e.target.closest("option")) {
+          return;
+        }
+        card.classList.toggle("expanded");
+      });
+    });
 
     document.querySelectorAll(".status-select").forEach((select) => {
       select.addEventListener("change", async (e) => {

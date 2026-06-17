@@ -1998,3 +1998,81 @@ footer {
 .btn-filter:active {
   transform: translateY(0);
 }
+
+/* ── Resolved Compact Cards Styling ──────────────────────── */
+.resolved-compact-card {
+  cursor: pointer;
+  border-left-width: 3px !important;
+  padding: 0.8rem 1rem !important;
+  background: rgba(30, 41, 59, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.04) !important;
+  border-left-color: var(--success) !important;
+  transition: all 0.25s ease-in-out !important;
+}
+
+.resolved-compact-card:hover {
+  transform: translateY(-2px) !important;
+  background: rgba(30, 41, 59, 0.35) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+.resolved-compact-card .compact-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  gap: 0.75rem;
+}
+
+.resolved-compact-card .compact-desc {
+  font-size: 0.88rem;
+  color: #e2e8f0;
+  margin: 0;
+  font-weight: 500;
+  flex: 1;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.resolved-compact-card .compact-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.resolved-compact-card .card-expanded-content {
+  display: none;
+  margin-top: 0.9rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 0.9rem;
+}
+
+.resolved-compact-card.expanded .card-expanded-content {
+  display: block;
+  animation: slideDownFade 0.2s ease-out;
+}
+
+.resolved-compact-card.expanded .compact-header {
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+
+.resolved-compact-card.expanded .compact-desc {
+  color: var(--text-muted);
+}
+
+@keyframes slideDownFade {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
