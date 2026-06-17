@@ -1608,11 +1608,11 @@ footer {
 }
 
 /* Status Colors for Map Markers */
-.status-open .marker-dot { background-color: #c084fc !important; } /* Purple/Violet for Open */
-.status-open .marker-pulse { background-color: #c084fc !important; }
+.status-open .marker-dot { background-color: #cc1010 !important; } /* Red for Open */
+.status-open .marker-pulse { background-color: #ef4444 !important; }
 
-.status-in-progress .marker-dot { background-color: var(--warning) !important; } /* Amber for In Progress */
-.status-in-progress .marker-pulse { background-color: var(--warning) !important; }
+.status-in-progress .marker-dot { background-color: #088bef !important; } /* Dark Orange for In Progress */
+.status-in-progress .marker-pulse { background-color: #0d63f8 !important; }
 
 /* Urgency Pulse Speeds */
 .urgency-5 .marker-pulse { animation-duration: 0.8s; }
