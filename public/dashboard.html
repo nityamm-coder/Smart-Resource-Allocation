@@ -34,6 +34,10 @@
           Smart Resource Allocation
         </a>
         <div class="ms-auto d-flex align-items-center gap-2">
+          <!-- Notification Alert Button -->
+          <button id="notification-btn" class="btn btn-outline-warning btn-sm d-none">
+            <i class="bi bi-bell me-1"></i>Enable Alerts
+          </button>
           <!-- Refresh button to reload all requests -->
           <button id="refresh-btn" class="btn btn-outline-light btn-sm">
             <i class="bi bi-arrow-clockwise me-1"></i>Refresh
@@ -538,8 +542,9 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- Canvas Confetti CDN -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <!-- VanillaTilt CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/vanilla-tilt@1.8.1/dist/vanilla-tilt.min.js"></script>
+    <!-- Firebase SDK Compat -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <!-- Our frontend logic -->
     <script src="app.js"></script>
   </body>

@@ -478,6 +478,178 @@ if (isDashboardPage) {
   let volunteerSearchQuery = "";
   const expandedRequestIds = new Set(); // Track expanded resolved cards to persist state over auto-refreshes
 
+  let isInitialLoad = true;
+  const notifiedRequestIds = new Set();
+  let unsubscribeFirestore = null;
+
+  const notificationBtn = document.getElementById("notification-btn");
+
+  // Play notification chime using Web Audio API
+  function playNotificationSound() {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const playTone = (frequency, startTime, duration) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(frequency, startTime);
+        gain.gain.setValueAtTime(0.25, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+      const now = audioCtx.currentTime;
+      playTone(880, now, 0.15);
+      playTone(1200, now + 0.15, 0.25);
+    } catch (e) {
+      console.warn("Failed to play notification sound:", e);
+    }
+  }
+
+  // Update navbar alerts button text and style
+  function updateNotificationButton() {
+    if (!notificationBtn) return;
+    if (!("Notification" in window)) {
+      notificationBtn.classList.add("d-none");
+      return;
+    }
+    notificationBtn.classList.remove("d-none");
+    if (Notification.permission === "granted") {
+      notificationBtn.innerHTML = `<i class="bi bi-bell-fill text-success me-1"></i>Alerts Active`;
+      notificationBtn.className = "btn btn-outline-success btn-sm";
+      notificationBtn.disabled = true;
+    } else if (Notification.permission === "denied") {
+      notificationBtn.innerHTML = `<i class="bi bi-bell-slash text-danger me-1"></i>Alerts Blocked`;
+      notificationBtn.className = "btn btn-outline-danger btn-sm";
+      notificationBtn.disabled = true;
+    } else {
+      notificationBtn.innerHTML = `<i class="bi bi-bell-fill animate-pulse me-1"></i>Enable Alerts`;
+      notificationBtn.className = "btn btn-outline-warning btn-sm";
+      notificationBtn.disabled = false;
+    }
+  }
+
+  // Fire system and in-app notifications for critical requests
+  function fireUrgency5Notification(reqId, reqData) {
+    playNotificationSound();
+    
+    // In-app toast
+    showToast(`🔴 CRITICAL EMERGENCY: ${reqData.description} (${reqData.zone})`, "danger");
+
+    if (Notification.permission === "granted") {
+      const notification = new Notification("CRITICAL EMERGENCY (Urgency 5)", {
+        body: `[${reqData.category}] ${reqData.description}\nHub: ${reqData.zone}\nPhone: ${reqData.victimPhone}`,
+        icon: "https://cdn-icons-png.flaticon.com/512/564/564619.png",
+        tag: reqId,
+        requireInteraction: true
+      });
+
+      notification.onclick = () => {
+        window.focus();
+        const card = document.getElementById(`card-${reqId}`);
+        if (card) {
+          card.scrollIntoView({ behavior: "smooth", block: "center" });
+          card.classList.add("highlight-card");
+          setTimeout(() => card.classList.remove("highlight-card"), 5000);
+        }
+        notification.close();
+      };
+    }
+  }
+
+  // Setup click handler for notifications registration button
+  if (notificationBtn) {
+    updateNotificationButton();
+    notificationBtn.addEventListener("click", () => {
+      Notification.requestPermission().then((permission) => {
+        updateNotificationButton();
+        if (permission === "granted") {
+          showToast("Urgency-5 browser alerts enabled successfully!", "success");
+          playNotificationSound();
+        }
+      });
+    });
+  }
+
+  // Start the Firestore live stream
+  function startLiveListener() {
+    if (typeof firebase === "undefined") {
+      console.warn("Firebase SDK is not available. Using polling fallback.");
+      return;
+    }
+
+    try {
+      const firebaseConfig = {
+        projectId: "smart-resource-allocatio-156d4"
+      };
+      
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      
+      const firestoreDb = firebase.firestore();
+
+      unsubscribeFirestore = firestoreDb.collection("requests")
+        .orderBy("urgency", "desc")
+        .onSnapshot((snapshot) => {
+          console.log("🔥 Live Firestore update received");
+          
+          const requests = [];
+          snapshot.forEach((doc) => {
+            requests.push({ id: doc.id, ...doc.data() });
+          });
+
+          // Detect new urgency-5 open requests to notify
+          if (!isInitialLoad) {
+            snapshot.docChanges().forEach((change) => {
+              if (change.type === "added" || change.type === "modified") {
+                const reqData = change.doc.data();
+                const reqId = change.doc.id;
+                if (reqData.urgency === 5 && reqData.status === "Open" && !notifiedRequestIds.has(reqId)) {
+                  notifiedRequestIds.add(reqId);
+                  fireUrgency5Notification(reqId, reqData);
+                }
+              }
+            });
+          } else {
+            // Populate initial set to avoid notifying for existing requests
+            snapshot.forEach((doc) => {
+              const data = doc.data();
+              if (data.urgency === 5 && data.status === "Open") {
+                notifiedRequestIds.add(doc.id);
+              }
+            });
+            isInitialLoad = false;
+            
+            // Hide skeleton load if this is the initial snapshot
+            loadingState.classList.add("d-none");
+            if (currentView === "board") {
+              kanbanBoard.classList.remove("d-none");
+            } else {
+              mapViewContainer.classList.remove("d-none");
+              initMap();
+              setTimeout(() => {
+                map.invalidateSize();
+                applyFilters();
+              }, 100);
+            }
+          }
+
+          allRequests = requests;
+          applyFilters();
+        }, (error) => {
+          console.error("Firestore onSnapshot subscription failed, falling back to REST polling:", error);
+          unsubscribeFirestore = null;
+          loadRequests();
+        });
+    } catch (e) {
+      console.error("Firebase connection initialization failed, falling back to REST polling:", e);
+      unsubscribeFirestore = null;
+    }
+  }
+
   // DOM references
   const kanbanBoard    = document.getElementById("kanban-board");
   const loadingState   = document.getElementById("loading-state");
@@ -980,7 +1152,26 @@ if (isDashboardPage) {
     }
   }
 
+  async function loadVolunteers() {
+    try {
+      const res = await fetch(`${API_BASE}/api/volunteers`);
+      if (res.ok) {
+        const data = await res.json();
+        allVolunteers = data.volunteers || [];
+        applyVolunteerFilters();
+      }
+    } catch (err) {
+      console.error("Error loading volunteers:", err);
+    }
+  }
+
   async function loadRequests() {
+    if (unsubscribeFirestore) {
+      // If live updates are active, just reload volunteers and inventory via HTTP
+      await Promise.all([loadVolunteers(), loadInventory()]);
+      return;
+    }
+
     loadingState.classList.remove("d-none");
     kanbanBoard.classList.add("d-none");
     mapViewContainer.classList.add("d-none");
@@ -1507,15 +1698,20 @@ if (isDashboardPage) {
   }
 
   // Initial load
+  startLiveListener();
   loadRequests();
 
   // Expose loadRequests globally so SMS gateway can trigger refresh
   window.loadRequests = loadRequests;
 
-  // Periodic rendering loop (every 10 seconds) to update timers and SLA checks in real-time
+  // Periodic rendering loop (every 10 seconds) to update timers and SLA checks in real-time,
+  // and poll via REST API if Firestore listener is not active
   setInterval(() => {
     if (allRequests.length > 0) {
       applyFilters();
+    }
+    if (!unsubscribeFirestore) {
+      loadRequests();
     }
   }, 10000);
 }
