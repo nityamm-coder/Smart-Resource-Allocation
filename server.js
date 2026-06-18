@@ -313,6 +313,51 @@ function matchVolunteer(category, zone, dynamicVolunteersList = volunteers) {
   return bestMatch; // Could be null if all volunteers are unavailable
 }
 
+/**
+ * Checks if two descriptions are similar based on keyword overlap.
+ * Uses lowercase comparison, stripping special characters, and matches at least 1 keyword (length > 2).
+ * Skip common English stop words.
+ */
+function areDescriptionsSimilar(desc1, desc2) {
+  if (!desc1 || !desc2) return false;
+  
+  const stopWords = new Set([
+    "a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "arent", "as", "at", 
+    "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "cant", "cannot", "could", 
+    "did", "didnt", "do", "does", "doesnt", "doing", "dont", "down", "during", "each", "few", "for", "from", "further", 
+    "had", "hadnt", "has", "hasnt", "have", "havent", "having", "he", "hed", "hell", "hes", "her", "here", "heres", 
+    "hers", "herself", "him", "himself", "his", "how", "hows", "i", "id", "ill", "im", "ive", "if", "in", "into", 
+    "is", "isnt", "it", "its", "itself", "lets", "me", "more", "most", "mustnt", "my", "myself", "no", "nor", "not", 
+    "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", 
+    "same", "shant", "she", "shed", "shell", "shes", "should", "shouldnt", "so", "some", "such", "than", "that", 
+    "thats", "the", "their", "theirs", "them", "themselves", "then", "there", "theres", "these", "they", "theyd", 
+    "theyll", "theyre", "theyve", "this", "those", "through", "to", "too", "under", "until", "up", "very", "was", 
+    "wasnt", "we", "wed", "well", "were", "weve", "werent", "what", "whats", "when", "whens", "where", "wheres", 
+    "which", "while", "who", "whos", "whom", "why", "whys", "with", "wont", "would", "wouldnt", "you", "youd", 
+    "youll", "youre", "youve", "your", "yours", "yourself", "yourselves", "need", "needs", "want", "wants", "please",
+    "request", "requests", "help", "emergency", "urgently", "urgent"
+  ]);
+
+  const clean = (str) => {
+    return str
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .split(/\s+/)
+      .filter(w => w.length > 2 && !stopWords.has(w));
+  };
+
+  const words1 = new Set(clean(desc1));
+  const words2 = clean(desc2);
+  
+  for (const word of words2) {
+    if (words1.has(word)) {
+      return true; // Match found
+    }
+  }
+  return false;
+}
+
+
 // ── Route: POST /api/submit ───────────────────────────────────
 /**
  * This is the main route called when a user submits a community need.
@@ -367,6 +412,94 @@ Example output:
 
     const { category, urgency, detectedLanguage, translatedDescription } = classified;
 
+    // ── Step 1.5: Check for duplicate active requests to cluster ──────────
+    let matchedRequestDoc = null;
+    let currentUrgency = Number(urgency);
+
+    if (db) {
+      try {
+        const activeRequestsSnapshot = await db.collection("requests")
+          .where("status", "in", ["Open", "In Progress"])
+          .where("zone", "==", zone)
+          .where("category", "==", category)
+          .get();
+        
+        for (const doc of activeRequestsSnapshot.docs) {
+          const data = doc.data();
+          // Match using translated descriptions to support multi-language clustering
+          if (areDescriptionsSimilar(translatedDescription, data.translatedDescription)) {
+            matchedRequestDoc = doc;
+            break;
+          }
+        }
+      } catch (err) {
+        console.error("⚠️ Error checking duplicate requests:", err.message);
+      }
+    }
+
+    if (matchedRequestDoc) {
+      // ── Step 2a: Update existing request (Cluster Append) ──────────────
+      const docId = matchedRequestDoc.id;
+      const data = matchedRequestDoc.data();
+      const updatedUrgency = Math.min(5, data.urgency + 1);
+      const newTimestamp = new Date().toISOString();
+
+      const newReport = {
+        description,
+        address: finalAddress,
+        victimPhone,
+        createdAt: newTimestamp,
+        detectedLanguage: detectedLanguage || "English",
+        translatedDescription: translatedDescription || description
+      };
+
+      const updatedClusteredReports = data.clusteredReports ? [...data.clusteredReports, newReport] : [newReport];
+      
+      const updatedTimeline = [
+        ...(data.timeline || []),
+        {
+          status: data.status,
+          timestamp: newTimestamp,
+          note: `Clustered report added from ${victimPhone} (${detectedLanguage || "English"}). Urgency bumped to ${updatedUrgency}/5.`
+        }
+      ];
+
+      const updateData = {
+        urgency: updatedUrgency,
+        clusteredReports: updatedClusteredReports,
+        timeline: updatedTimeline
+      };
+
+      await db.collection("requests").doc(docId).update(updateData);
+      console.log(`✅ Request clustered into existing document: ${docId}`);
+
+      return res.status(200).json({
+        success: true,
+        id: docId,
+        description: data.description,
+        zone: data.zone,
+        address: data.address,
+        victimPhone: data.victimPhone,
+        category: data.category,
+        urgency: updatedUrgency,
+        detectedLanguage: data.detectedLanguage,
+        translatedDescription: data.translatedDescription,
+        matchedVolunteer: data.matchedVolunteer
+          ? {
+              id: data.matchedVolunteer.id,
+              name: data.matchedVolunteer.name,
+              skills: data.matchedVolunteer.skills,
+              zone: data.matchedVolunteer.zone,
+              phone: data.matchedVolunteer.phone,
+            }
+          : null,
+        status: data.status,
+        createdAt: data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate().toISOString() : data.createdAt) : newTimestamp,
+        clusteredReports: updatedClusteredReports,
+        timeline: updatedTimeline
+      });
+    }
+
     // ── Step 2: Match a volunteer ────────────────────────────
     const dynamicVolunteersList = await getDynamicVolunteers();
     const matchedVolunteer = matchVolunteer(category, zone, dynamicVolunteersList);
@@ -393,6 +526,7 @@ Example output:
         : null,
       status: "Open", // All new requests start as "Open"
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      clusteredReports: [], // Initialise empty clustered reports array
       timeline: [
         {
           status: "Open",
@@ -472,6 +606,95 @@ Response:
 
     const { name, phone, zone, address, description, category, urgency, detectedLanguage } = parsed;
 
+    // ── Step 1.5: Check for duplicate active requests to cluster ──────────
+    let matchedRequestDoc = null;
+    const finalAddress = address || "N/A";
+    const finalDescription = description || smsText;
+
+    if (db) {
+      try {
+        const activeRequestsSnapshot = await db.collection("requests")
+          .where("status", "in", ["Open", "In Progress"])
+          .where("zone", "==", zone || "Thane")
+          .where("category", "==", category || "Other")
+          .get();
+        
+        for (const doc of activeRequestsSnapshot.docs) {
+          const data = doc.data();
+          if (areDescriptionsSimilar(finalDescription, data.translatedDescription)) {
+            matchedRequestDoc = doc;
+            break;
+          }
+        }
+      } catch (err) {
+        console.error("⚠️ Error checking duplicate SMS requests:", err.message);
+      }
+    }
+
+    if (matchedRequestDoc) {
+      // ── Step 2a: Update existing request (Cluster Append) ──────────────
+      const docId = matchedRequestDoc.id;
+      const data = matchedRequestDoc.data();
+      const updatedUrgency = Math.min(5, data.urgency + 1);
+      const newTimestamp = new Date().toISOString();
+
+      const newReport = {
+        description: smsText,
+        address: finalAddress,
+        victimPhone: phone || senderPhone,
+        createdAt: newTimestamp,
+        detectedLanguage: detectedLanguage || "English",
+        translatedDescription: finalDescription
+      };
+
+      const updatedClusteredReports = data.clusteredReports ? [...data.clusteredReports, newReport] : [newReport];
+      
+      const updatedTimeline = [
+        ...(data.timeline || []),
+        {
+          status: data.status,
+          timestamp: newTimestamp,
+          note: `Clustered SMS report added from ${phone || senderPhone} (${detectedLanguage || "English"}). Urgency bumped to ${updatedUrgency}/5.`
+        }
+      ];
+
+      const updateData = {
+        urgency: updatedUrgency,
+        clusteredReports: updatedClusteredReports,
+        timeline: updatedTimeline
+      };
+
+      await db.collection("requests").doc(docId).update(updateData);
+      console.log(`✅ SMS Request clustered into existing document: ${docId}`);
+
+      return res.status(200).json({
+        success: true,
+        id: docId,
+        description: data.description,
+        zone: data.zone,
+        address: data.address,
+        victimPhone: data.victimPhone,
+        category: data.category,
+        urgency: updatedUrgency,
+        detectedLanguage: data.detectedLanguage,
+        translatedDescription: data.translatedDescription,
+        matchedVolunteer: data.matchedVolunteer
+          ? {
+              id: data.matchedVolunteer.id,
+              name: data.matchedVolunteer.name,
+              skills: data.matchedVolunteer.skills,
+              zone: data.matchedVolunteer.zone,
+              phone: data.matchedVolunteer.phone,
+            }
+          : null,
+        status: data.status,
+        source: data.source || "Web",
+        createdAt: data.createdAt ? (data.createdAt.toDate ? data.createdAt.toDate().toISOString() : data.createdAt) : newTimestamp,
+        clusteredReports: updatedClusteredReports,
+        timeline: updatedTimeline
+      });
+    }
+
     // Match a volunteer
     const dynamicVolunteersList = await getDynamicVolunteers();
     const matchedVolunteer = matchVolunteer(category, zone, dynamicVolunteersList);
@@ -498,6 +721,7 @@ Response:
       status: "Open",
       source: "SMS",
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      clusteredReports: [], // Initialise empty clustered reports array
       timeline: [
         {
           status: "Open",
@@ -848,6 +1072,7 @@ app.patch("/api/requests/:id/status", async (req, res) => {
           detectedLanguage: currentData.detectedLanguage || "English",
           translatedDescription: currentData.translatedDescription || "",
           matchedVolunteer: currentData.matchedVolunteer || null,
+          clusteredReports: currentData.clusteredReports || [],
           timeline: updatedTimeline,
           createdAt: currentData.createdAt || null,
           archivedAt: timestamp,
@@ -900,6 +1125,7 @@ app.delete("/api/requests/resolved", async (req, res) => {
         detectedLanguage: currentData.detectedLanguage || "English",
         translatedDescription: currentData.translatedDescription || "",
         matchedVolunteer: currentData.matchedVolunteer || null,
+        clusteredReports: currentData.clusteredReports || [],
         timeline: updatedTimeline,
         createdAt: currentData.createdAt || null,
         archivedAt: timestamp,
@@ -951,6 +1177,7 @@ app.delete("/api/requests/:id", async (req, res) => {
           detectedLanguage: currentData.detectedLanguage || "English",
           translatedDescription: currentData.translatedDescription || "",
           matchedVolunteer: currentData.matchedVolunteer || null,
+          clusteredReports: currentData.clusteredReports || [],
           timeline: updatedTimeline,
           createdAt: currentData.createdAt || null,
           archivedAt: timestamp,
@@ -980,5 +1207,5 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 // ── Export for Vercel Serverless ──────────────────────────────
-// Vercel needs this export to treat server.js as a serverless function.
+// Vercel needs this export to treat server.js as a serverless function. 
 module.exports = app;

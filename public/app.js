@@ -476,6 +476,7 @@ if (isDashboardPage) {
   let searchQuery = "";
   let allVolunteers = [];
   let volunteerSearchQuery = "";
+  const expandedRequestIds = new Set(); // Track expanded resolved cards to persist state over auto-refreshes
 
   // DOM references
   const kanbanBoard    = document.getElementById("kanban-board");
@@ -632,6 +633,40 @@ if (isDashboardPage) {
       )
       .join("");
 
+    const clusteredHtml = req.clusteredReports && req.clusteredReports.length > 0
+      ? `<div class="mt-2 pt-2 border-top border-secondary-subtle">
+           <a class="meta d-inline-flex align-items-center" data-bs-toggle="collapse" href="#clustered-${req.id}" role="button" aria-expanded="false" aria-controls="clustered-${req.id}" style="font-size:0.72rem; color: #a5b4fc; text-decoration:none; font-weight: 600;">
+             <i class="bi bi-people-fill me-1"></i>View Clustered Reports (${req.clusteredReports.length})
+           </a>
+           <div class="collapse mt-2" id="clustered-${req.id}">
+             <div class="clustered-reports-list" style="font-size:0.72rem;">
+               ${req.clusteredReports.map((cReport, idx) => {
+                 const time = new Date(cReport.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                 const date = new Date(cReport.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric' });
+                 return `
+                   <div class="clustered-report-item mb-2 pb-2" style="border-bottom: 1px dashed rgba(255,255,255,0.05);">
+                     <div class="d-flex justify-content-between align-items-center mb-1">
+                       <span class="text-white-50 fw-bold">Report #${idx + 2} (${date}, ${time})</span>
+                       <span class="badge-source ${cReport.detectedLanguage ? 'sms' : 'web'} text-xs" style="font-size: 0.65rem; padding: 0.1rem 0.3rem;">
+                         ${cReport.detectedLanguage ? '📟 ' + cReport.detectedLanguage : '🌐 English'}
+                       </span>
+                     </div>
+                     <div class="text-white mb-1" style="white-space: normal;">"${cReport.description}"</div>
+                     ${(cReport.detectedLanguage && cReport.detectedLanguage.toLowerCase() !== 'english' && cReport.translatedDescription) ? 
+                       `<div class="mb-1 text-indigo" style="font-size: 0.72rem; color: #c7d2fe;">
+                         <i class="bi bi-translate me-1"></i> Translated: "${cReport.translatedDescription}"
+                        </div>` : ''
+                     }
+                     <div class="text-muted mb-1"><i class="bi bi-geo-alt-fill text-danger me-1"></i>Address: ${formatAddressHtml(cReport.address)}</div>
+                     <div class="text-muted"><i class="bi bi-telephone-fill text-success me-1"></i>Contact: <a href="tel:${cReport.victimPhone}" style="color:var(--brand-primary);">${cReport.victimPhone}</a></div>
+                   </div>
+                 `;
+               }).join("")}
+             </div>
+           </div>
+         </div>`
+      : "";
+
     const timelineHtml = req.timeline && req.timeline.length > 0
       ? `<div class="mt-2 pt-2 border-top border-secondary-subtle">
            <a class="meta d-inline-flex align-items-center" data-bs-toggle="collapse" href="#timeline-${req.id}" role="button" aria-expanded="false" aria-controls="timeline-${req.id}" style="font-size:0.72rem; color: var(--text-muted); text-decoration:none;">
@@ -657,11 +692,15 @@ if (isDashboardPage) {
       const timeStr = createdDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
       const dateStr = createdDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
       const formattedTime = `${dateStr}, ${timeStr}`;
+      const isExpanded = expandedRequestIds.has(req.id);
 
       return `
-        <div class="request-card urgency-${req.urgency} resolved-compact-card" id="card-${req.id}">
+        <div class="request-card urgency-${req.urgency} resolved-compact-card ${isExpanded ? 'expanded' : ''}" id="card-${req.id}">
           <div class="compact-header">
-            <p class="compact-desc">${req.description}</p>
+            <p class="compact-desc">
+              ${req.clusteredReports && req.clusteredReports.length > 0 ? `<span class="badge-clustered me-2" style="font-size: 0.65rem;"><i class="bi bi-people-fill"></i> +${req.clusteredReports.length}</span>` : ''}
+              ${req.description}
+            </p>
             <span class="compact-meta">
               <i class="bi bi-check-circle-fill text-success" style="font-size: 0.82rem;"></i>
               ${formattedTime}
@@ -673,6 +712,7 @@ if (isDashboardPage) {
               <div>
                 <span class="badge-category">${getCategoryWithIcon(req.category)}</span>
                 ${sourceBadge}
+                ${req.clusteredReports && req.clusteredReports.length > 0 ? `<span class="badge-clustered ms-2"><i class="bi bi-people-fill"></i> +${req.clusteredReports.length} reports</span>` : ''}
               </div>
               <div class="d-flex align-items-center">
                 <span class="badge-urgency ${urgencyClass}">
@@ -715,6 +755,7 @@ if (isDashboardPage) {
                 </button>
               </div>
             </div>
+            ${clusteredHtml}
             ${timelineHtml}
           </div>
         </div>
@@ -727,6 +768,7 @@ if (isDashboardPage) {
           <div>
             <span class="badge-category">${getCategoryWithIcon(req.category)}</span>
             ${sourceBadge}
+            ${req.clusteredReports && req.clusteredReports.length > 0 ? `<span class="badge-clustered ms-2"><i class="bi bi-people-fill"></i> +${req.clusteredReports.length} reports</span>` : ''}
           </div>
           <div class="d-flex align-items-center">
             <span class="badge-urgency ${urgencyClass}">
@@ -767,6 +809,7 @@ if (isDashboardPage) {
           </div>
           ${durationText}
         </div>
+        ${clusteredHtml}
         ${timelineHtml}
       </div>
     `;
@@ -822,10 +865,25 @@ if (isDashboardPage) {
     // Click event handler to expand/collapse resolved compact cards
     document.querySelectorAll(".resolved-compact-card").forEach((card) => {
       card.addEventListener("click", (e) => {
-        if (e.target.closest("select") || e.target.closest("button") || e.target.closest("a") || e.target.closest("option")) {
+        if (
+          e.target.closest("select") || 
+          e.target.closest("button") || 
+          e.target.closest("a") || 
+          e.target.closest("option") ||
+          e.target.closest(".collapse") ||
+          e.target.closest(".timeline-container") ||
+          e.target.closest(".clustered-reports-list")
+        ) {
           return;
         }
-        card.classList.toggle("expanded");
+        const requestId = card.id.replace("card-", "");
+        if (card.classList.contains("expanded")) {
+          card.classList.remove("expanded");
+          expandedRequestIds.delete(requestId);
+        } else {
+          card.classList.add("expanded");
+          expandedRequestIds.add(requestId);
+        }
       });
     });
 
@@ -869,7 +927,12 @@ if (isDashboardPage) {
         (r.victimPhone && r.victimPhone.toLowerCase().includes(query)) ||
         (r.zone && r.zone.toLowerCase().includes(query)) ||
         (r.category && r.category.toLowerCase().includes(query)) ||
-        (r.matchedVolunteer && r.matchedVolunteer.name && r.matchedVolunteer.name.toLowerCase().includes(query))
+        (r.matchedVolunteer && r.matchedVolunteer.name && r.matchedVolunteer.name.toLowerCase().includes(query)) ||
+        (r.clusteredReports && r.clusteredReports.some(c => 
+          (c.description && c.description.toLowerCase().includes(query)) ||
+          (c.address && c.address.toLowerCase().includes(query)) ||
+          (c.victimPhone && c.victimPhone.toLowerCase().includes(query))
+        ))
       );
     }
 
