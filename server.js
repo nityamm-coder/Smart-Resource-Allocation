@@ -386,18 +386,19 @@ app.post("/api/submit", submitLimiter, async (req, res) => {
     // ONLY with valid JSON. This handles classification, urgency, language detection, and translation.
     const systemPrompt = `
 You are a strict JSON-only classification and translation API for a disaster relief system.
-Your job is to read a community need description (which may be in English, Hindi, Marathi, Hinglish, or other regional languages), classify it, detect its language, and translate it to English.
+Your job is to read a community need description (which may be in English, Hindi, Marathi, Hinglish, or other regional languages), classify it, detect its language, translate it to English, and generate actionable safety instructions.
 
 Rules:
 - Return ONLY a raw JSON object. No markdown, no explanation, no extra text.
-- The JSON must have exactly four keys: "category", "urgency", "detectedLanguage", and "translatedDescription".
+- The JSON must have exactly five keys: "category", "urgency", "detectedLanguage", "translatedDescription", and "safetyTips".
 - "category" must be exactly ONE of: "Food", "Medical", "Shelter", "Other".
 - "urgency" must be an integer between 1 and 5, where 1 = low and 5 = critical.
 - "detectedLanguage" should be the name of the language the request was written in (e.g. "English", "Hindi", "Marathi", "Hinglish", etc.).
 - "translatedDescription" must be the complete, accurate English translation of the description. If the original description is already in English, "translatedDescription" must match the original description exactly.
+- "safetyTips" must be a JSON array of strings containing 4-5 extremely relevant, specific, actionable, and life-saving safety tips or instructions tailored to this specific scenario and its urgency level (e.g., immediate first aid tips if medical, emergency evacuation or water safety advice if flooding, etc.). Keep the tips concise, clear, and easy to read.
 
 Example output:
-{"category": "Medical", "urgency": 5, "detectedLanguage": "Hindi", "translatedDescription": "An elderly man in our building has run out of insulin and cannot reach a hospital."}
+{"category": "Medical", "urgency": 5, "detectedLanguage": "Hindi", "translatedDescription": "An elderly man in our building has run out of insulin and cannot reach a hospital.", "safetyTips": ["Keep the patient calm, resting, and hydrated.", "Do not administer insulin if you do not know the correct dose.", "Try to contact local pharmacy or emergency services immediately.", "Prepare a medical history summary for when help arrives."]}
     `.trim();
 
     const fullPrompt = `${systemPrompt}\n\nDescription: "${description}"`;
@@ -410,7 +411,7 @@ Example output:
     const cleanedText = rawText.replace(/```json|```/g, "").trim();
     const classified = JSON.parse(cleanedText);
 
-    const { category, urgency, detectedLanguage, translatedDescription } = classified;
+    const { category, urgency, detectedLanguage, translatedDescription, safetyTips } = classified;
 
     // ── Step 1.5: Check for duplicate active requests to cluster ──────────
     let matchedRequestDoc = null;
@@ -515,6 +516,7 @@ Example output:
       urgency: Number(urgency),
       detectedLanguage: detectedLanguage || "English",
       translatedDescription: translatedDescription || description,
+      safetyTips: safetyTips || [],
       matchedVolunteer: matchedVolunteer
         ? {
             id: matchedVolunteer.id,
@@ -569,32 +571,80 @@ app.post("/api/simulate-sms", smsLimiter, async (req, res) => {
   }
 
   try {
+    // ── Check if there is an unrated resolved request for this phone number ──
+    let unratedResolvedRequest = null;
+    if (db) {
+      try {
+        const resolvedSnapshot = await db.collection("requests")
+          .where("victimPhone", "==", senderPhone)
+          .where("status", "==", "Resolved")
+          .get();
+        
+        for (const doc of resolvedSnapshot.docs) {
+          const data = doc.data();
+          if (data.rating === undefined || data.rating === null) {
+            unratedResolvedRequest = { id: doc.id, ...data };
+            break;
+          }
+        }
+
+        if (!unratedResolvedRequest) {
+          const archivedSnapshot = await db.collection("archived_requests")
+            .where("victimPhone", "==", senderPhone)
+            .where("status", "==", "Resolved")
+            .get();
+          
+          for (const doc of archivedSnapshot.docs) {
+            const data = doc.data();
+            if (data.rating === undefined || data.rating === null) {
+              unratedResolvedRequest = { id: doc.id, ...data };
+              break;
+            }
+          }
+        }
+      } catch (err) {
+        console.error("⚠️ Error checking unrated resolved requests:", err.message);
+      }
+    }
+
+    const hasResolved = !!unratedResolvedRequest;
     const systemPrompt = `
 You are a strict JSON-only parser and translation API for a disaster relief SMS gateway.
-Your job is to read a single raw SMS message from a victim (which may contain spelling errors, shorthand text, Hinglish, Hindi, Marathi, or English), extract the key details, classify it, and translate it to English.
+Your job is to read a single raw SMS message from a victim (which may contain spelling errors, shorthand text, Hinglish, Hindi, Marathi, or English).
 
-Rules:
-1. Return ONLY a raw JSON object. No markdown, no explanation, no extra text.
-2. The JSON must have exactly these keys: "name", "phone", "zone", "address", "description", "category", "urgency", "detectedLanguage".
-3. For keys:
-   - "name": Extracted name of the person needing help (e.g. "Amit Patil"). If not mentioned in the message, set this to "Unknown Victim".
-   - "phone": Extracted contact phone number from the message text. If no phone number is found in the text, set this to the sender's phone number: "${senderPhone}".
-   - "zone": Locate which of these hubs/zones is mentioned or is the closest match for the location: "Vasind", "Kalyan", "Thane", "Mumbai Central". If none matches and you can't guess, default to "Thane".
-   - "address": The specific address, landmarks, or street mentioned in the message.
-   - "description": Translate the request details into clean English. This should describe the specific need.
-   - "category": Must be exactly ONE of: "Food", "Medical", "Shelter", "Other".
-   - "urgency": An integer from 1 to 5, where 1 = low and 5 = critical.
-   - "detectedLanguage": The language the original text was written in (e.g. "English", "Hindi", "Marathi", "Hinglish").
+${hasResolved ? `
+We have a recently resolved rescue request matching this phone number.
+Please determine if the message is:
+1. A rating/feedback reply to the volunteer who helped them (e.g. "5", "4 stars", " Priya was amazing 5", "very bad 1").
+2. A new emergency request (e.g. "need food", "water in house").
 
-Example raw SMS:
-"Vasind area: need medical kit urgently for Amit, phone 9898989898, near station"
-Response:
-{"name": "Amit", "phone": "9898989898", "zone": "Vasind", "address": "near station", "description": "Need medical kit urgently", "category": "Medical", "urgency": 4, "detectedLanguage": "English"}
+If it is a rating reply:
+- Return ONLY a raw JSON object with these keys: "isRating", "rating", "feedback".
+- "isRating" must be true.
+- "rating" must be an integer between 1 and 5.
+- "feedback" should be the translated English text of any comments they provided.
 
-Example raw SMS:
-"mumbai central, bhook lagi h khana bhejo door no 4"
-Response:
-{"name": "Unknown Victim", "phone": "${senderPhone}", "zone": "Mumbai Central", "address": "door no 4", "description": "Hungry, send food", "category": "Food", "urgency": 3, "detectedLanguage": "Hinglish"}
+If it is NOT a rating reply (it is a new emergency request):
+` : `
+This is a new emergency request.
+`}
+- Return ONLY a raw JSON object with these keys: "isRating", "name", "phone", "zone", "address", "description", "category", "urgency", "detectedLanguage", "safetyTips".
+- "isRating" must be false.
+- "name": Extracted name of the person needing help (e.g. "Amit Patil"). If not mentioned in the message, set this to "Unknown Victim".
+- "phone": Extracted contact phone number from the message text. If no phone number is found in the text, set this to the sender's phone number: "${senderPhone}".
+- "zone": Locate which of these hubs/zones is mentioned or is the closest match for the location: "Vasind", "Kalyan", "Thane", "Mumbai Central". If none matches and you can't guess, default to "Thane".
+- "address": The specific address, landmarks, or street mentioned in the message.
+- "description": Translate the request details into clean English. This should describe the specific need.
+- "category": Must be exactly ONE of: "Food", "Medical", "Shelter", "Other".
+- "urgency": An integer from 1 to 5, where 1 = low and 5 = critical.
+- "detectedLanguage": The language the original text was written in (e.g. "English", "Hindi", "Marathi", "Hinglish").
+- "safetyTips": A JSON array of 4-5 extremely relevant, specific, and actionable life-saving safety tips or instructions tailored to this specific scenario and its urgency level. Ensure they are concise and easy to read.
+
+Example output if rating:
+{"isRating": true, "rating": 5, "feedback": "Priya was very helpful and arrived quickly."}
+
+Example output if new request:
+{"isRating": false, "name": "Unknown Victim", "phone": "${senderPhone}", "zone": "Mumbai Central", "address": "door no 4", "description": "Hungry, send food", "category": "Food", "urgency": 3, "detectedLanguage": "Hinglish", "safetyTips": ["If food is scarce, ration existing supplies.", "Keep food in clean, dry, sealed containers to prevent contamination.", "Avoid eating food that has come into contact with floodwater.", "Boil or purify any drinking water before consumption."]}
     `.trim();
 
     const fullPrompt = `${systemPrompt}\n\nSMS Message: "${smsText}"`;
@@ -604,7 +654,76 @@ Response:
     const cleanedText = rawText.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(cleanedText);
 
-    const { name, phone, zone, address, description, category, urgency, detectedLanguage } = parsed;
+    if (parsed.isRating) {
+      const rating = Number(parsed.rating) || 5;
+      const feedback = parsed.feedback || "";
+      const requestId = unratedResolvedRequest.id;
+
+      const ratingUpdate = {
+        rating,
+        feedback,
+        timeline: [
+          ...(unratedResolvedRequest.timeline || []),
+          {
+            status: "Resolved",
+            timestamp: new Date().toISOString(),
+            note: `Victim rated volunteer via SMS: ${rating}/5. Feedback: "${feedback}"`
+          }
+        ]
+      };
+
+      if (db) {
+        await db.collection("requests").doc(requestId).update(ratingUpdate);
+        const archiveRef = db.collection("archived_requests").doc(requestId);
+        const archiveDoc = await archiveRef.get();
+        if (archiveDoc.exists) {
+          await archiveRef.update(ratingUpdate);
+        }
+      }
+
+      // Update volunteer rating
+      const volunteer = unratedResolvedRequest.matchedVolunteer;
+      if (volunteer && volunteer.id) {
+        if (db) {
+          const volRef = db.collection("volunteers").doc(volunteer.id);
+          const volDoc = await volRef.get();
+          if (volDoc.exists) {
+            const volData = volDoc.data();
+            const ratings = volData.ratings || [];
+            ratings.push(rating);
+            const ratingCount = ratings.length;
+            const averageRating = ratings.reduce((sum, r) => sum + r, 0) / ratingCount;
+
+            await volRef.update({
+              ratings,
+              ratingCount,
+              averageRating
+            });
+          }
+        } else {
+          // Fallback in-memory
+          const vol = volunteers.find(v => v.id === volunteer.id);
+          if (vol) {
+            if (!vol.ratings) vol.ratings = [];
+            vol.ratings.push(rating);
+            vol.ratingCount = vol.ratings.length;
+            vol.averageRating = vol.ratings.reduce((sum, r) => sum + r, 0) / vol.ratings.length;
+          }
+        }
+      }
+
+      console.log(`✅ Rating received via SMS for request ${requestId}: ${rating}/5`);
+      return res.status(200).json({
+        success: true,
+        isRating: true,
+        requestId,
+        rating,
+        feedback,
+        volunteerName: volunteer ? volunteer.name : "Volunteer"
+      });
+    }
+
+    const { name, phone, zone, address, description, category, urgency, detectedLanguage, safetyTips } = parsed;
 
     // ── Step 1.5: Check for duplicate active requests to cluster ──────────
     let matchedRequestDoc = null;
@@ -709,6 +828,7 @@ Response:
       urgency: Number(urgency) || 3,
       detectedLanguage: detectedLanguage || "English",
       translatedDescription: description || smsText,
+      safetyTips: safetyTips || [],
       matchedVolunteer: matchedVolunteer
         ? {
             id: matchedVolunteer.id,
@@ -721,7 +841,7 @@ Response:
       status: "Open",
       source: "SMS",
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      clusteredReports: [], // Initialise empty clustered reports array
+      clusteredReports: [],
       timeline: [
         {
           status: "Open",
@@ -753,15 +873,28 @@ Response:
 /**
  * Fetches the details/status of a single request.
  * Useful for the victim-side tracking page to get live updates.
+ * Falls back to the archived_requests collection if not found in active requests.
  */
 app.get("/api/requests/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    const doc = await db.collection("requests").doc(id).get();
-    if (!doc.exists) {
+    let doc = await db.collection("requests").doc(id).get();
+    let requestData = null;
+    
+    if (doc.exists) {
+      requestData = { id: doc.id, ...doc.data() };
+    } else {
+      const archivedDoc = await db.collection("archived_requests").doc(id).get();
+      if (archivedDoc.exists) {
+        requestData = { id: archivedDoc.id, ...archivedDoc.data() };
+      }
+    }
+
+    if (!requestData) {
       return res.status(404).json({ error: "Request not found." });
     }
-    return res.json({ success: true, request: { id: doc.id, ...doc.data() } });
+    
+    return res.json({ success: true, request: requestData });
   } catch (err) {
     console.error("❌ Error fetching request status:", err.message);
     return res.status(500).json({ error: "Could not fetch status." });
@@ -1205,6 +1338,128 @@ if (process.env.NODE_ENV !== "production") {
     console.log(`🚀 Server running at http://localhost:${PORT}`);
   });
 }
+
+// ── Route: GET /api/requests/by-phone/:phone ──────────────────
+/**
+ * Retrieves all requests (active and archived) matching a contact number.
+ * Ordered chronologically by creation timestamp.
+ */
+app.get("/api/requests/by-phone/:phone", async (req, res) => {
+  const { phone } = req.params;
+  try {
+    const snapshot = await db.collection("requests").where("victimPhone", "==", phone).get();
+    const archivedSnapshot = await db.collection("archived_requests").where("victimPhone", "==", phone).get();
+    
+    const requests = [];
+    snapshot.forEach(doc => {
+      requests.push({ id: doc.id, ...doc.data() });
+    });
+    archivedSnapshot.forEach(doc => {
+      if (!requests.some(r => r.id === doc.id)) {
+        requests.push({ id: doc.id, ...doc.data() });
+      }
+    });
+
+    requests.sort((a, b) => {
+      const timeA = a.createdAt ? (a.createdAt.toDate ? a.createdAt.toDate().toISOString() : a.createdAt) : "";
+      const timeB = b.createdAt ? (b.createdAt.toDate ? b.createdAt.toDate().toISOString() : b.createdAt) : "";
+      return new Date(timeA) - new Date(timeB);
+    });
+
+    return res.json({ success: true, requests });
+  } catch (err) {
+    console.error("❌ Error fetching requests by phone:", err.message);
+    return res.status(500).json({ error: "Could not fetch history." });
+  }
+});
+
+// ── Route: POST /api/requests/:id/rate ────────────────────────
+/**
+ * Rates the volunteer assigned to a request.
+ * Saves the rating/feedback and recalculates the volunteer's average rating.
+ */
+app.post("/api/requests/:id/rate", async (req, res) => {
+  const { id } = req.params;
+  const { rating, feedback } = req.body;
+
+  const numRating = Number(rating);
+  if (isNaN(numRating) || numRating < 1 || numRating > 5) {
+    return res.status(400).json({ error: "Rating must be a number between 1 and 5." });
+  }
+
+  try {
+    let requestDoc = await db.collection("requests").doc(id).get();
+    let isArchived = false;
+
+    if (!requestDoc.exists) {
+      requestDoc = await db.collection("archived_requests").doc(id).get();
+      isArchived = true;
+    }
+
+    if (!requestDoc.exists) {
+      return res.status(404).json({ error: "Request not found." });
+    }
+
+    const requestData = requestDoc.data();
+    const volunteer = requestData.matchedVolunteer;
+
+    if (!volunteer || !volunteer.id) {
+      return res.status(400).json({ error: "No volunteer was matched to this request. Cannot submit a rating." });
+    }
+
+    const timestamp = new Date().toISOString();
+    const updatedTimeline = [
+      ...(requestData.timeline || []),
+      {
+        status: requestData.status,
+        timestamp,
+        note: `Victim rated volunteer ${rating}/5. Feedback: "${feedback || 'None'}"`
+      }
+    ];
+
+    const ratingUpdate = {
+      rating: numRating,
+      feedback: feedback || "",
+      timeline: updatedTimeline
+    };
+
+    if (isArchived) {
+      await db.collection("archived_requests").doc(id).update(ratingUpdate);
+    } else {
+      await db.collection("requests").doc(id).update(ratingUpdate);
+      const archiveRef = db.collection("archived_requests").doc(id);
+      const archiveDoc = await archiveRef.get();
+      if (archiveDoc.exists) {
+        await archiveRef.update(ratingUpdate);
+      }
+    }
+
+    // Update volunteer average rating
+    const volId = volunteer.id;
+    const volRef = db.collection("volunteers").doc(volId);
+    const volDoc = await volRef.get();
+
+    if (volDoc.exists) {
+      const volData = volDoc.data();
+      const ratings = volData.ratings || [];
+      ratings.push(numRating);
+      const ratingCount = ratings.length;
+      const averageRating = ratings.reduce((sum, r) => sum + r, 0) / ratingCount;
+
+      await volRef.update({
+        ratings,
+        ratingCount,
+        averageRating
+      });
+      console.log(`⭐ Updated volunteer ${volId} rating to ${averageRating} (${ratingCount} reviews)`);
+    }
+
+    return res.json({ success: true, message: "Rating submitted successfully." });
+  } catch (err) {
+    console.error("❌ Error rating request:", err.message);
+    return res.status(500).json({ error: "Could not submit rating." });
+  }
+});
 
 // ── Export for Vercel Serverless ──────────────────────────────
 // Vercel needs this export to treat server.js as a serverless function. 

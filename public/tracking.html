@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Live Tracking Portal — Smart Resource Allocation</title>
+  <meta name="description" content="Track your emergency request, view volunteer progress, access AI safety instructions, and rate your rescue volunteer." />
+
+  <!-- Bootstrap 5 CSS (CDN) -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet" />
+  <!-- Custom design tokens and styles -->
+  <link rel="stylesheet" href="style.css" />
+
+  <style>
+    /* Custom style overrides for tracking page */
+    .tracking-container {
+      margin-top: 40px;
+    }
+    .safety-tip-item {
+      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      border-radius: 8px;
+    }
+    .safety-tip-item:hover {
+      background: rgba(99, 102, 241, 0.05);
+      border-color: rgba(99, 102, 241, 0.2);
+      transform: translateX(4px);
+    }
+    /* Star Rating Widget */
+    .star-rating {
+      font-size: 2.2rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: inline-flex;
+      gap: 0.35rem;
+    }
+    .star-rating .star-icon {
+      transition: all 0.2s ease;
+    }
+    .star-rating .star-icon:hover {
+      transform: scale(1.2);
+    }
+    .star-rating .star-icon.active {
+      color: var(--warning);
+      text-shadow: 0 0 12px rgba(245, 158, 11, 0.5);
+    }
+    /* Stepper Styling */
+    .status-stepper {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin-bottom: 2rem;
+    }
+    .status-stepper::before {
+      content: "";
+      position: absolute;
+      top: 25px;
+      left: 10%;
+      right: 10%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      z-index: 1;
+    }
+    .status-stepper .step-progress {
+      position: absolute;
+      top: 25px;
+      left: 10%;
+      height: 4px;
+      background: var(--brand-primary);
+      z-index: 1;
+      width: 0%;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .status-stepper .step {
+      text-align: center;
+      position: relative;
+      z-index: 2;
+      flex: 1;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+    }
+    .status-stepper .step-icon {
+      width: 54px;
+      height: 54px;
+      border-radius: 50%;
+      background: #1e293b;
+      border: 3px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 0.5rem auto;
+      font-size: 1.25rem;
+      transition: all 0.4s ease;
+      box-shadow: var(--glass-glow);
+    }
+    .status-stepper .step.active .step-icon {
+      border-color: var(--brand-primary);
+      color: var(--text-light);
+      background: var(--brand-primary);
+      box-shadow: 0 0 16px var(--brand-glow);
+      animation: pulse-indigo 2s infinite;
+    }
+    .status-stepper .step.completed .step-icon {
+      border-color: var(--success);
+      color: var(--text-light);
+      background: var(--success);
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.3);
+    }
+    .status-stepper .step.completed {
+      color: var(--text-light);
+    }
+    .status-stepper .step.active {
+      color: var(--brand-primary);
+    }
+    @keyframes pulse-indigo {
+      0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+      70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">
+        <i class="bi bi-heart-pulse-fill me-2 text-danger"></i>
+        Smart Resource Allocation
+      </a>
+      <div class="ms-auto">
+        <a href="index.html" class="btn btn-outline-light btn-sm me-2">
+          <i class="bi bi-arrow-left me-1"></i>Submit New Request
+        </a>
+        <a href="dashboard.html" class="btn btn-outline-info btn-sm">
+          <i class="bi bi-grid-3x3-gap me-1"></i>NGO Dashboard
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Live Tracking Panel -->
+  <main class="container tracking-container mb-5">
+    <!-- Header Summary Card -->
+    <div class="form-card mb-4" style="max-width: 100%;">
+      <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+          <span class="badge bg-indigo mb-2" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Live Tracker</span>
+          <h2 class="fs-4 fw-700 m-0" id="tracking-header">Loading Request Status...</h2>
+          <p class="text-muted small mt-1 mb-0" id="request-id-display">Request ID: --</p>
+        </div>
+        <div id="status-badge-container">
+          <span class="badge bg-secondary py-2 px-3 fs-6">Syncing...</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Stepper Status indicator -->
+    <div class="form-card mb-4 py-4" style="max-width: 100%;">
+      <div class="status-stepper" id="stepper">
+        <div class="step-progress" id="step-progress"></div>
+        <div class="step" id="step-submitted">
+          <div class="step-icon"><i class="bi bi-send-fill"></i></div>
+          Submitted
+        </div>
+        <div class="step" id="step-assigned">
+          <div class="step-icon"><i class="bi bi-person-badge"></i></div>
+          Assigned
+        </div>
+        <div class="step" id="step-resolved">
+          <div class="step-icon"><i class="bi bi-check2-circle"></i></div>
+          Resolved
+        </div>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <!-- Left Column: Volunteer Details & Interactive Rating -->
+      <div class="col-12 col-md-6">
+        <!-- Request Summary Info -->
+        <div class="form-card mb-4" style="max-width: 100%;">
+          <h3 class="fs-5 fw-700 mb-3"><i class="bi bi-info-circle text-indigo me-2"></i>Request Details</h3>
+          <div class="p-3 rounded border border-secondary-subtle bg-opacity-10 bg-white" style="font-size: 0.88rem;">
+            <p class="mb-2"><strong>Category:</strong> <span id="info-category">--</span></p>
+            <p class="mb-2"><strong>Urgency Level:</strong> <span id="info-urgency">--</span></p>
+            <p class="mb-2"><strong>Zone/Locality:</strong> <span id="info-zone">--</span></p>
+            <p class="mb-2"><strong>Address:</strong> <span id="info-address">--</span></p>
+            <p class="mb-0"><strong>Your Description:</strong> <span id="info-description">--</span></p>
+          </div>
+          
+          <!-- Dynamic Translation Row -->
+          <div id="info-translation-container" class="mt-3 d-none">
+            <div class="p-2 rounded text-start" style="font-size: 0.82rem; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2); border-left: 4px solid var(--brand-primary); color: #c7d2fe;">
+              <i class="bi bi-translate me-1 text-primary"></i> <strong>AI Translated (<span id="info-lang">--</span> ➔ English):</strong> "<span id="info-translation">--</span>"
+            </div>
+          </div>
+        </div>
+
+        <!-- Matched Volunteer Info -->
+        <div class="form-card mb-4 d-none" id="volunteer-card" style="max-width: 100%;">
+          <h3 class="fs-5 fw-700 mb-3"><i class="bi bi-person-heart text-success me-2"></i>Matched Volunteer</h3>
+          <div class="p-3 rounded text-start mb-3" style="font-size: 0.88rem; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
+            <div class="d-flex align-items-center gap-3 mb-2">
+              <div class="bg-indigo p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                <i class="bi bi-person-fill text-white fs-5"></i>
+              </div>
+              <div>
+                <h5 class="m-0 fs-6 fw-bold" id="vol-name">--</h5>
+                <p class="text-muted small m-0" id="vol-skills">Specialty: --</p>
+              </div>
+            </div>
+            <p class="mb-2 mt-3"><i class="bi bi-telephone-fill text-success me-2"></i>Contact: <a href="" id="vol-phone-link" class="text-info fw-bold">--</a></p>
+            <p class="mb-3 text-muted small"><i class="bi bi-shield-fill text-success me-1"></i> Certified Smart Allocation Rescue Volunteer</p>
+            
+            <a href="" id="vol-wa-link" target="_blank" class="btn w-100 py-2 d-flex align-items-center justify-content-center gap-2" style="background: #25d366; color: white; font-weight: 600; border-radius: 8px; border: none; box-shadow: 0 4px 12px rgba(37, 211, 102, 0.2);">
+              <i class="bi bi-whatsapp fs-5"></i> Message on WhatsApp
+            </a>
+          </div>
+        </div>
+
+        <!-- Star Rating Input (Shown only when resolved & not rated) -->
+        <div class="form-card d-none mb-4" id="rating-card" style="max-width: 100%;">
+          <div id="rating-form-container">
+            <h3 class="fs-5 fw-700 mb-2 text-warning"><i class="bi bi-star-fill me-2"></i>Rate Your Volunteer</h3>
+            <p class="text-muted small mb-3">Your feedback helps us recognize outstanding volunteers and improve resource deployment reliability.</p>
+            
+            <div class="text-center my-3">
+              <div class="star-rating" id="rating-stars">
+                <i class="bi bi-star star-icon" data-value="1"></i>
+                <i class="bi bi-star star-icon" data-value="2"></i>
+                <i class="bi bi-star star-icon" data-value="3"></i>
+                <i class="bi bi-star star-icon" data-value="4"></i>
+                <i class="bi bi-star star-icon" data-value="5"></i>
+              </div>
+              <p class="mt-2 text-muted small" id="rating-value-label">Click a star to select a rating</p>
+            </div>
+
+            <div class="mb-3">
+              <label for="feedback-text" class="form-label text-muted small fw-bold">Feedback / Comments (Optional)</label>
+              <textarea id="feedback-text" class="form-control form-control-sm text-white" style="background: rgba(15, 12, 41, 0.4); border: 1px solid rgba(255,255,255,0.08);" rows="3" placeholder="Tell us how the volunteer helped you..."></textarea>
+            </div>
+
+            <button type="button" class="btn btn-warning w-100 py-2 text-dark font-title" id="submit-rating-btn" disabled>
+              <i class="bi bi-chat-heart-fill me-2"></i>Submit Feedback
+            </button>
+          </div>
+
+          <div id="rating-success-container" class="d-none text-center py-4">
+            <i class="bi bi-heart-fill text-danger fs-1 animate-pulse d-block mb-3"></i>
+            <h4 class="fw-bold text-white mb-2">Thank You for Your Feedback!</h4>
+            <p class="text-muted small mb-0">Your rating has been recorded successfully. Stay safe!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: AI Safety Instructions & Timeline Log -->
+      <div class="col-12 col-md-6">
+        <!-- AI Life Saving Tips Card -->
+        <div class="form-card mb-4" style="max-width: 100%;">
+          <h3 class="fs-5 fw-700 mb-3 text-indigo">
+            <i class="bi bi-shield-fill-exclamation me-2 animate-pulse"></i>AI Life-Saving Instructions
+          </h3>
+          <p class="text-muted small mb-3">
+            While you wait, follow these custom emergency precautions generated specifically for your situation by Google Gemini AI:
+          </p>
+          <div id="safety-tips-list" class="d-flex flex-column gap-2">
+            <div class="p-3 rounded text-center text-muted border border-secondary-subtle">
+              <i class="bi bi-hourglass-split d-block fs-3 mb-2 animate-spin"></i>Generating safety instructions...
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Log Timeline -->
+        <div class="form-card mb-4" style="max-width: 100%;">
+          <h3 class="fs-5 fw-700 mb-3"><i class="bi bi-clock-history text-muted me-2"></i>Live Activity Log</h3>
+          <div class="timeline-container" id="timeline-container" style="max-height: 350px; overflow-y: auto;">
+            <!-- Timeline entries populated dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    Built with ❤️ for the Hackathon &nbsp;·&nbsp; Smart Resource Allocation Live Tracking Portal
+  </footer>
+
+  <!-- Firebase SDK Compat -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Client Tracking JS Logic -->
+  <script>
+    // Config Firestore client-side SDK
+    const firebaseConfig = { projectId: "smart-resource-allocatio-156d4" };
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.firestore();
+
+    // UI Elements References
+    const trackingHeader = document.getElementById("tracking-header");
+    const requestIdDisplay = document.getElementById("request-id-display");
+    const statusBadgeContainer = document.getElementById("status-badge-container");
+    const stepProgress = document.getElementById("step-progress");
+    const stepSubmitted = document.getElementById("step-submitted");
+    const stepAssigned = document.getElementById("step-assigned");
+    const stepResolved = document.getElementById("step-resolved");
+
+    const infoCategory = document.getElementById("info-category");
+    const infoUrgency = document.getElementById("info-urgency");
+    const infoZone = document.getElementById("info-zone");
+    const infoAddress = document.getElementById("info-address");
+    const infoDescription = document.getElementById("info-description");
+    const infoTranslationContainer = document.getElementById("info-translation-container");
+    const infoLang = document.getElementById("info-lang");
+    const infoTranslation = document.getElementById("info-translation");
+
+    const volunteerCard = document.getElementById("volunteer-card");
+    const volName = document.getElementById("vol-name");
+    const volSkills = document.getElementById("vol-skills");
+    const volPhoneLink = document.getElementById("vol-phone-link");
+    const volWaLink = document.getElementById("vol-wa-link");
+
+    const ratingCard = document.getElementById("rating-card");
+    const ratingStars = document.getElementById("rating-stars");
+    const feedbackText = document.getElementById("feedback-text");
+    const submitRatingBtn = document.getElementById("submit-rating-btn");
+    const ratingValueLabel = document.getElementById("rating-value-label");
+    const ratingFormContainer = document.getElementById("rating-form-container");
+    const ratingSuccessContainer = document.getElementById("rating-success-container");
+
+    const safetyTipsList = document.getElementById("safety-tips-list");
+    const timelineContainer = document.getElementById("timeline-container");
+
+    // Rating State
+    let selectedRating = 0;
+
+    // Get Request ID from URL query parameters (?id=XXXX)
+    const urlParams = new URLSearchParams(window.location.search);
+    const requestId = urlParams.get("id");
+
+    if (!requestId) {
+      showErrorView("Invalid URL: Missing Tracking ID parameter.");
+    } else {
+      requestIdDisplay.textContent = `Request ID: ${requestId}`;
+      initLiveListener();
+    }
+
+    // Set up interactive star rating behaviors
+    const starIcons = ratingStars.querySelectorAll(".star-icon");
+    starIcons.forEach(star => {
+      // Mouse hover visual feedback
+      star.addEventListener("mouseover", () => {
+        const val = parseInt(star.dataset.value);
+        highlightStars(val);
+      });
+      // Mouse leave visual reset
+      star.addEventListener("mouseout", () => {
+        highlightStars(selectedRating);
+      });
+      // Click selection
+      star.addEventListener("click", () => {
+        selectedRating = parseInt(star.dataset.value);
+        highlightStars(selectedRating);
+        submitRatingBtn.disabled = false;
+        
+        const labels = {
+          1: "Poor (1/5) - Not helpful",
+          2: "Fair (2/5) - Below expectation",
+          3: "Good (3/5) - Satisfactory help",
+          4: "Very Good (4/5) - Professional and helpful",
+          5: "Excellent (5/5) - Amazing, quick life-saving support!"
+        };
+        ratingValueLabel.innerHTML = `<strong>${labels[selectedRating]}</strong>`;
+      });
+    });
+
+    function highlightStars(count) {
+      starIcons.forEach(star => {
+        const val = parseInt(star.dataset.value);
+        if (val <= count) {
+          star.classList.add("active");
+          star.classList.replace("bi-star", "bi-star-fill");
+        } else {
+          star.classList.remove("active");
+          star.classList.replace("bi-star-fill", "bi-star");
+        }
+      });
+    }
+
+    // Submit rating form click
+    submitRatingBtn.addEventListener("click", async () => {
+      if (selectedRating < 1 || selectedRating > 5) return;
+      submitRatingBtn.disabled = true;
+      submitRatingBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-2" role="status"></span>Submitting feedback...`;
+
+      try {
+        const res = await fetch(`/api/requests/${requestId}/rate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            rating: selectedRating,
+            feedback: feedbackText.value.trim()
+          })
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || "Failed to submit rating.");
+        }
+
+        // Play Confetti!
+        if (window.confetti) {
+          confetti({
+            particleCount: 100,
+            spread: 70,
+            origin: { y: 0.6 }
+          });
+        }
+
+        // Display Success View
+        ratingFormContainer.classList.add("d-none");
+        ratingSuccessContainer.classList.remove("d-none");
+
+      } catch (err) {
+        alert(err.message);
+        submitRatingBtn.disabled = false;
+        submitRatingBtn.innerHTML = `<i class="bi bi-chat-heart-fill me-2"></i>Submit Feedback`;
+      }
+    });
+
+    // Error view display
+    function showErrorView(message) {
+      trackingHeader.textContent = "Error Loading Request";
+      statusBadgeContainer.innerHTML = `<span class="badge bg-danger py-2 px-3 fs-6">Failed</span>`;
+      timelineContainer.innerHTML = `
+        <div class="text-danger p-3 text-center">
+          <i class="bi bi-exclamation-triangle-fill fs-2 d-block mb-2"></i>
+          <strong>${message}</strong>
+        </div>`;
+      safetyTipsList.innerHTML = `
+        <div class="text-muted p-3 text-center border border-secondary-subtle rounded">
+          No tips available for invalid tracking sessions.
+        </div>`;
+    }
+
+    // Connect real-time snap listener
+    function initLiveListener() {
+      // Connect to Firestore collection doc
+      let activeUnsub = db.collection("requests").doc(requestId).onSnapshot(
+        (doc) => {
+          if (doc.exists) {
+            renderRequest(doc.data());
+          } else {
+            // Check archive fallback
+            db.collection("archived_requests").doc(requestId).onSnapshot(
+              (archivedDoc) => {
+                if (archivedDoc.exists) {
+                  renderRequest(archivedDoc.data());
+                } else {
+                  showErrorView("Request not found. Verify the ID or contact the helpline.");
+                }
+              },
+              (err) => {
+                console.error("Archive listener error:", err);
+                pollBackendFallback();
+              }
+            );
+          }
+        },
+        (err) => {
+          console.warn("Firestore live listener failed. Falling back to REST polling:", err.message);
+          pollBackendFallback();
+        }
+      );
+    }
+
+    // REST Polling fallback if client Firestore is blocked/failed
+    function pollBackendFallback() {
+      const pollInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/requests/${requestId}`);
+          if (!res.ok) {
+            if (res.status === 404) {
+              clearInterval(pollInterval);
+              showErrorView("Request not found.");
+            }
+            return;
+          }
+          const data = await res.json();
+          renderRequest(data.request);
+        } catch (err) {
+          console.error("Poll fetch error:", err);
+        }
+      }, 4000);
+    }
+
+    // Main render function
+    function renderRequest(data) {
+      // Set headers & badge
+      const categoryLabel = getCategoryEmoji(data.category);
+      trackingHeader.textContent = `${categoryLabel} Request status: ${data.status}`;
+      
+      const badgeColors = {
+        "Open": "bg-primary",
+        "In Progress": "bg-warning text-dark animate-pulse",
+        "Resolved": "bg-success"
+      };
+      const badgeClass = badgeColors[data.status] || "bg-secondary";
+      statusBadgeContainer.innerHTML = `<span class="badge ${badgeClass} py-2 px-3 fs-6">${data.status}</span>`;
+
+      // Visual stepper percentage & classes
+      stepSubmitted.className = "step";
+      stepAssigned.className = "step";
+      stepResolved.className = "step";
+
+      if (data.status === "Open") {
+        stepSubmitted.classList.add("active");
+        if (data.matchedVolunteer) {
+          stepSubmitted.classList.replace("active", "completed");
+          stepAssigned.classList.add("active");
+          stepProgress.style.width = "50%";
+        } else {
+          stepProgress.style.width = "0%";
+        }
+      } else if (data.status === "In Progress") {
+        stepSubmitted.classList.add("completed");
+        stepAssigned.classList.add("completed");
+        stepResolved.classList.add("active");
+        stepProgress.style.width = "50%";
+      } else if (data.status === "Resolved") {
+        stepSubmitted.classList.add("completed");
+        stepAssigned.classList.add("completed");
+        stepResolved.classList.add("completed");
+        stepProgress.style.width = "100%";
+      }
+
+      // Card Information Fields
+      infoCategory.textContent = data.category || "General";
+      infoUrgency.textContent = `${data.urgency || 3} / 5`;
+      infoZone.textContent = data.zone || "Thane";
+      infoAddress.textContent = data.address || "N/A";
+      infoDescription.textContent = data.description || "No description provided.";
+
+      // Translator View
+      if (data.detectedLanguage && data.detectedLanguage.toLowerCase() !== "english" && data.translatedDescription) {
+        infoTranslationContainer.classList.remove("d-none");
+        infoLang.textContent = data.detectedLanguage;
+        infoTranslation.textContent = data.translatedDescription;
+      } else {
+        infoTranslationContainer.classList.add("d-none");
+      }
+
+      // Volunteer Info View
+      if (data.matchedVolunteer) {
+        volunteerCard.classList.remove("d-none");
+        volName.textContent = data.matchedVolunteer.name;
+        volSkills.textContent = `Specialty: ${data.matchedVolunteer.skills ? data.matchedVolunteer.skills.join(", ") : 'Rescue'}`;
+        volPhoneLink.textContent = data.matchedVolunteer.phone;
+        volPhoneLink.href = `tel:${data.matchedVolunteer.phone}`;
+
+        // WhatsApp deep link setup
+        const waMsg = `Hi ${data.matchedVolunteer.name}, I am tracking request ID: ${requestId}. Could you please assist me?`;
+        volWaLink.href = `https://wa.me/${data.matchedVolunteer.phone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(waMsg)}`;
+      } else {
+        volunteerCard.classList.add("d-none");
+      }
+
+      // Rating/Feedback View
+      if (data.status === "Resolved" && data.matchedVolunteer) {
+        ratingCard.classList.remove("d-none");
+        if (data.rating !== undefined && data.rating !== null) {
+          ratingFormContainer.classList.add("d-none");
+          ratingSuccessContainer.classList.remove("d-none");
+        } else {
+          // Reset form container if previously hidden (e.g. status toggled resolved back and forth during tests)
+          ratingFormContainer.classList.remove("d-none");
+          ratingSuccessContainer.classList.add("d-none");
+        }
+      } else {
+        ratingCard.classList.add("d-none");
+      }
+
+      // Render AI Safety Instructions
+      if (data.safetyTips && data.safetyTips.length > 0) {
+        safetyTipsList.innerHTML = data.safetyTips.map(tip => `
+          <div class="p-3 safety-tip-item text-start d-flex align-items-start gap-2">
+            <i class="bi bi-patch-exclamation-fill text-warning fs-5 mt-0.5"></i>
+            <div>
+              <span class="d-block" style="font-size: 0.88rem; color: var(--text-light); line-height: 1.4;">${tip}</span>
+            </div>
+          </div>
+        `).join("");
+      } else {
+        // Fallback static tips by category if AI prompt hasn't updated or was empty
+        renderStaticSafetyTipsFallback(data.category);
+      }
+
+      // Render timeline events
+      if (data.timeline && data.timeline.length > 0) {
+        timelineContainer.innerHTML = data.timeline.map(event => {
+          let timeStr = "";
+          try {
+            if (event.timestamp) {
+              const dt = new Date(event.timestamp);
+              timeStr = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + " · " + dt.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            }
+          } catch(e) {}
+          return `
+            <div class="timeline-event">
+              <div class="timeline-event-dot"></div>
+              <span class="timeline-event-time">${timeStr}</span>
+              <span class="timeline-event-note">${event.note}</span>
+            </div>`;
+        }).join("");
+      } else {
+        timelineContainer.innerHTML = `<div class="text-muted small text-center py-3">No activity logs recorded.</div>`;
+      }
+    }
+
+    function getCategoryEmoji(cat) {
+      const emojiMap = {
+        "Food": "🍞",
+        "Medical": "🏥",
+        "Shelter": "⛺",
+        "Other": "🚨"
+      };
+      return emojiMap[cat] || "🚨";
+    }
+
+    function renderStaticSafetyTipsFallback(category) {
+      const defaultTips = {
+        "Food": [
+          "Ration food and drinking water carefully.",
+          "Keep food items stored in sealed, elevated areas away from moisture.",
+          "Avoid eating perishables that have been warm for more than 2 hours.",
+          "Ensure drinking water is boiled or purified."
+        ],
+        "Medical": [
+          "Keep the patient lying down, warm, and comfortable.",
+          "Do not move individuals with suspected spinal injuries unless absolutely necessary.",
+          "Apply clean dressings to bleed wounds and hold steady pressure.",
+          "Keep emergency medications and health details prepared for the responder."
+        ],
+        "Shelter": [
+          "Remain indoors in a structural shelter unless structurally compromised.",
+          "Keep away from windows, glass structures, and weak rooftops.",
+          "Prepare warm clothing, blankets, and dry items.",
+          "Secure essential items, documents, and flashlights in waterproof sleeves."
+        ],
+        "Other": [
+          "Ensure you stay in safe, high elevation landmarks.",
+          "Conserve phone battery; avoid unnecessary use.",
+          "Watch out for loose powerlines and fast-moving water bodies.",
+          "Establish contact with family members or local helpers."
+        ]
+      };
+
+      const tips = defaultTips[category] || defaultTips["Other"];
+      safetyTipsList.innerHTML = tips.map(tip => `
+        <div class="p-3 safety-tip-item text-start d-flex align-items-start gap-2">
+          <i class="bi bi-patch-exclamation-fill text-warning fs-5 mt-0.5"></i>
+          <div>
+            <span class="d-block" style="font-size: 0.88rem; color: var(--text-light); line-height: 1.4;">${tip}</span>
+          </div>
+        </div>
+      `).join("");
+    }
+  </script>
+</body>
+
+</html>

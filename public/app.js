@@ -74,6 +74,17 @@ if (isIndexPage) {
   const resultBanner = document.getElementById("result-banner");
   const placeholderContent = document.getElementById("placeholder-content");
 
+  const trackSearchForm = document.getElementById("track-search-form");
+  if (trackSearchForm) {
+    trackSearchForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const searchId = document.getElementById("track-search-id").value.trim();
+      if (searchId) {
+        window.location.href = `tracking.html?id=${searchId}`;
+      }
+    });
+  }
+
   // ── Typewriter Animation Logic ──
   const typewriterEl = document.getElementById("typewriter-text");
   if (typewriterEl) {
@@ -447,7 +458,6 @@ if (isIndexPage) {
         throw new Error(data.error || "Unknown server error.");
       }
 
-      showResult(true, data);
       form.reset();
       
       // Fire celebration confetti!
@@ -458,9 +468,12 @@ if (isIndexPage) {
           origin: { y: 0.6 }
         });
       }
-      showToast("Emergency request reported successfully!", "success");
+      showToast("Emergency request reported successfully! Redirecting to tracking portal...", "success");
+      setTimeout(() => {
+        window.location.href = `tracking.html?id=${data.id}`;
+      }, 1500);
     } catch (err) {
-      showResult(false, err.message);
+      showToast(err.message, "danger");
     } finally {
       setLoading(false);
     }
@@ -1238,6 +1251,14 @@ if (isDashboardPage) {
           .map(s => `<span class="roster-skill-badge">${s}</span>`)
           .join("");
 
+        const ratingVal = vol.averageRating ? vol.averageRating.toFixed(1) : "5.0";
+        const reviewsCount = vol.ratingCount || 0;
+        const ratingHtml = `
+          <div class="roster-meta text-warning">
+            <i class="bi bi-star-fill me-1"></i>Rating: <strong>${ratingVal}</strong> (${reviewsCount} review${reviewsCount === 1 ? '' : 's'})
+          </div>
+        `;
+
         return `
           <div class="roster-card">
             <div class="roster-header">
@@ -1255,6 +1276,7 @@ if (isDashboardPage) {
               <i class="bi bi-telephone-fill text-success"></i>
               <a href="tel:${vol.phone}">${vol.phone}</a>
             </div>
+            ${ratingHtml}
             <div class="roster-skills mt-2">
               <div class="roster-skills-badges">${skillsBadges}</div>
             </div>
@@ -1797,6 +1819,24 @@ if (smsForm) {
 
       const data = await res.json();
 
+      if (data.isRating) {
+        logConsole(`⭐ AI Detected Rating Response!`, "success");
+        logConsole(`   - Rating: ${data.rating}/5`, "success");
+        logConsole(`   - Feedback: "${data.feedback}"`, "success");
+        await sleep(800);
+        logConsole(`💾 Saving rating & updating volunteer rating database...`, "info");
+        await sleep(600);
+        logConsole(`✅ Rating recorded for volunteer ${data.volunteerName}!`, "success");
+        
+        appendChatMessage(`Gateway Reply: Thank you! Your rating of ${data.rating}/5 for volunteer ${data.volunteerName} has been recorded.`, "received");
+        
+        if (window.loadRequests) {
+          logConsole("🔄 Refreshing NGO dashboard Kanban board...", "info");
+          await window.loadRequests();
+        }
+        return;
+      }
+
       logConsole(`✅ AI Parsing Complete! Language: ${data.detectedLanguage}`, "success");
       logConsole(`   - Category: ${data.category}`, "success");
       logConsole(`   - Urgency: ${data.urgency}/5`, "success");
@@ -1841,28 +1881,100 @@ if (smsForm) {
   });
 }
 
-// Global helper for tracking simulated SMS request from the index page
+// Load SMS History when modal is opened or phone number changes
+async function loadSmsHistory(phone) {
+  if (!phone) return;
+  const smsChatBody = document.getElementById("sms-chat-body");
+  if (!smsChatBody) return;
+
+  try {
+    const res = await fetch(`/api/requests/by-phone/${encodeURIComponent(phone)}`);
+    if (!res.ok) throw new Error("Failed to fetch history");
+    const data = await res.json();
+
+    smsChatBody.innerHTML = `
+      <div class="sms-message received">
+        <div class="sms-text">SYSTEM: Gateway online. Compose your SMS emergency text below. You can use English, Hindi, Marathi, Hinglish, etc.</div>
+      </div>
+    `;
+
+    if (data.success && data.requests) {
+      data.requests.forEach(req => {
+        // 1. Sent SMS message (description)
+        const msgDiv1 = document.createElement("div");
+        msgDiv1.className = `sms-message sent`;
+        msgDiv1.innerHTML = `<div class="sms-text">${req.description}</div>`;
+        smsChatBody.appendChild(msgDiv1);
+
+        // 2. Gateway acknowledgement
+        const volName = req.matchedVolunteer ? req.matchedVolunteer.name : "NGO Team";
+        const msgDiv2 = document.createElement("div");
+        msgDiv2.className = `sms-message received`;
+        msgDiv2.innerHTML = `<div class="sms-text">Gateway Reply: Request received. Urgency: ${req.urgency}/5. Matched Volunteer: ${volName}. ID: ${req.id}</div>`;
+        smsChatBody.appendChild(msgDiv2);
+
+        // 3. Status updates (if In Progress or Resolved)
+        if (req.status === "In Progress" && req.matchedVolunteer) {
+          const msgDiv3 = document.createElement("div");
+          msgDiv3.className = `sms-message received`;
+          msgDiv3.innerHTML = `<div class="sms-text">Gateway Alert: Volunteer ${req.matchedVolunteer.name} is en route. Contact: ${req.matchedVolunteer.phone}</div>`;
+          smsChatBody.appendChild(msgDiv3);
+        } else if (req.status === "Resolved") {
+          const msgDiv3 = document.createElement("div");
+          msgDiv3.className = `sms-message received`;
+          msgDiv3.innerHTML = `<div class="sms-text">Gateway Alert: Your request has been resolved by NGO. Please rate your volunteer by replying (1-5), e.g. "5 Priya was very helpful".</div>`;
+          smsChatBody.appendChild(msgDiv3);
+          
+          // 4. Rating reply if already rated
+          if (req.rating !== undefined && req.rating !== null) {
+            const feedbackText = req.feedback ? ` - ${req.feedback}` : "";
+            const msgDiv4 = document.createElement("div");
+            msgDiv4.className = `sms-message sent`;
+            msgDiv4.innerHTML = `<div class="sms-text">${req.rating}${feedbackText}</div>`;
+            smsChatBody.appendChild(msgDiv4);
+
+            const msgDiv5 = document.createElement("div");
+            msgDiv5.className = `sms-message received`;
+            msgDiv5.innerHTML = `<div class="sms-text">Gateway Reply: Thank you! Your rating of ${req.rating}/5 for volunteer ${volName} has been recorded.</div>`;
+            smsChatBody.appendChild(msgDiv5);
+          }
+        }
+      });
+      smsChatBody.scrollTop = smsChatBody.scrollHeight;
+    }
+  } catch (err) {
+    console.error("Error loading SMS history:", err);
+  }
+}
+
+// Load history on input change
+const smsSenderPhone = document.getElementById("sms-sender-phone");
+if (smsSenderPhone) {
+  smsSenderPhone.addEventListener("change", () => {
+    loadSmsHistory(smsSenderPhone.value.trim());
+  });
+}
+
+// Load history on modal open
+const smsModalEl = document.getElementById("sms-modal");
+if (smsModalEl) {
+  smsModalEl.addEventListener("shown.bs.modal", () => {
+    const phoneInput = document.getElementById("sms-sender-phone");
+    if (phoneInput) {
+      loadSmsHistory(phoneInput.value.trim());
+    }
+  });
+}
+
+// Global helper for tracking simulated SMS request
 window.trackSmsRequest = (id) => {
   // Close the SMS simulator modal
   const smsModalEl = document.getElementById("sms-modal");
   const modal = bootstrap.Modal.getInstance(smsModalEl);
   if (modal) modal.hide();
 
-  // If we have showResult and status tracking (on index.html), load details
-  if (typeof showResult === "function") {
-    const placeholderContent = document.getElementById("placeholder-content");
-    if (placeholderContent) placeholderContent.classList.add("d-none");
-    
-    // Fetch and show status
-    fetch(`/api/requests/${id}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          showResult(true, data.request);
-        }
-      })
-      .catch(err => console.error("Error loading status:", err));
-  }
+  // Redirect to tracking page
+  window.location.href = `tracking.html?id=${id}`;
 };
 
 // ── History Logs Logic ──────────────────────────────────────────
