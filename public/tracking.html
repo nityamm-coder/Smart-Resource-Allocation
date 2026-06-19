@@ -152,14 +152,14 @@
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div>
           <span class="badge bg-indigo mb-2" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Live Tracker</span>
-          <div class="d-flex align-items-center gap-3">
-            <h2 class="fs-4 fw-700 m-0" id="tracking-header">Loading Request Status...</h2>
-            <div id="status-badge-container"></div>
-          </div>
+          <h2 class="fs-4 fw-700 m-0" id="tracking-header">Loading Request Status...</h2>
           <div class="mt-2 d-flex align-items-center gap-2">
             <p class="text-muted small mb-0" style="font-size: 0.9rem;">Tracking ID: <strong id="request-id-display" class="text-warning user-select-all px-2 py-1 bg-dark rounded border border-warning">--</strong></p>
             <button id="copy-id-btn" class="btn btn-sm btn-outline-warning" title="Copy Tracking ID"><i class="bi bi-clipboard"></i></button>
           </div>
+        </div>
+        <div id="status-badge-container">
+          <span class="badge bg-secondary py-2 px-4 fs-5">Syncing...</span>
         </div>
       </div>
     </div>
@@ -541,7 +541,7 @@
         "Resolved": "bg-success"
       };
       const badgeClass = badgeColors[data.status] || "bg-secondary";
-      statusBadgeContainer.innerHTML = `<span class="badge ${badgeClass} py-2 px-3 fs-6">${data.status}</span>`;
+      statusBadgeContainer.innerHTML = `<span class="badge ${badgeClass} py-2 px-4 fs-5">${data.status}</span>`;
 
       // Visual stepper percentage & classes
       stepSubmitted.className = "step";
