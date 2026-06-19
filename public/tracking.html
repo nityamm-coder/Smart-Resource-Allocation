@@ -59,8 +59,8 @@
       content: "";
       position: absolute;
       top: 25px;
-      left: 10%;
-      right: 10%;
+      left: 12.5%;
+      right: 12.5%;
       height: 4px;
       background: rgba(255, 255, 255, 0.08);
       z-index: 1;
@@ -68,7 +68,7 @@
     .status-stepper .step-progress {
       position: absolute;
       top: 25px;
-      left: 10%;
+      left: 12.5%;
       height: 4px;
       background: var(--brand-primary);
       z-index: 1;
@@ -127,6 +127,18 @@
 </head>
 
 <body>
+  <!-- Notification Overlay -->
+  <div id="resolved-notification" class="d-none position-fixed top-0 start-50 translate-middle-x mt-4 shadow" style="z-index: 1050; width: 90%; max-width: 500px; transition: all 0.5s ease;">
+    <div class="alert alert-success alert-dismissible fade show border-2 border-success d-flex align-items-center gap-3" role="alert" style="background: rgba(6, 78, 59, 0.95); backdrop-filter: blur(10px); color: white;">
+      <i class="bi bi-bell-fill fs-3 text-warning" style="animation: pulse-indigo 2s infinite;"></i>
+      <div>
+        <strong>Issue Resolved!</strong><br>
+        <span class="small">Your volunteer marked this as resolved. Please scroll down to rate them and provide feedback!</span>
+      </div>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+  </div>
+
   <!-- Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="container">
@@ -532,6 +544,20 @@
 
     // Main render function
     function renderRequest(data) {
+      // Check for resolved transition to show notification
+      if (window.lastRequestStatus && window.lastRequestStatus !== "Resolved" && data.status === "Resolved" && data.matchedVolunteer && (data.rating === undefined || data.rating === null)) {
+        const notif = document.getElementById("resolved-notification");
+        if (notif) {
+          notif.classList.remove("d-none");
+          notif.style.transform = "translate(-50%, 0)";
+          setTimeout(() => {
+            notif.style.transform = "translate(-50%, -150%)";
+            setTimeout(() => notif.classList.add("d-none"), 500);
+          }, 15000);
+        }
+      }
+      window.lastRequestStatus = data.status;
+
       // Set headers
       trackingHeader.textContent = `Request status: ${data.status}`;
       
@@ -554,7 +580,7 @@
         if (data.matchedVolunteer) {
           stepSubmitted.classList.replace("active", "completed");
           stepAssigned.classList.add("active");
-          stepProgress.style.width = "33%";
+          stepProgress.style.width = "25%";
         } else {
           stepProgress.style.width = "0%";
         }
@@ -562,13 +588,13 @@
         stepSubmitted.classList.add("completed");
         stepAssigned.classList.add("completed");
         stepInprogress.classList.add("active");
-        stepProgress.style.width = "66%";
+        stepProgress.style.width = "50%";
       } else if (data.status === "Resolved") {
         stepSubmitted.classList.add("completed");
         stepAssigned.classList.add("completed");
         stepInprogress.classList.add("completed");
         stepResolved.classList.add("completed");
-        stepProgress.style.width = "100%";
+        stepProgress.style.width = "75%";
       }
 
       // Card Information Fields
