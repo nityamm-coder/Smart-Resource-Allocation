@@ -894,6 +894,36 @@ Example output if new request:
     return res.status(500).json({ error: "Something went wrong processing SMS. Check server logs." });
   }
 });
+// ── Route: GET /api/requests/stats ────────────────────────────
+/**
+ * Retrieves the total count of resolved requests from both active
+ * and archived request databases.
+ */
+app.get("/api/requests/stats", async (req, res) => {
+  try {
+    if (!db) {
+      return res.json({ success: true, resolvedCount: 0 });
+    }
+
+    const activeResolvedSnapshot = await db.collection("requests")
+      .where("status", "==", "Resolved")
+      .get();
+
+    const archivedResolvedSnapshot = await db.collection("archived_requests")
+      .where("status", "==", "Resolved")
+      .get();
+
+    const totalResolved = activeResolvedSnapshot.size + archivedResolvedSnapshot.size;
+
+    return res.json({
+      success: true,
+      resolvedCount: totalResolved
+    });
+  } catch (err) {
+    console.error("❌ Error fetching request stats:", err.message);
+    return res.status(500).json({ error: "Could not fetch request statistics." });
+  }
+});
 
 
 // ── Route: GET /api/requests/:id ─────────────────────────────
