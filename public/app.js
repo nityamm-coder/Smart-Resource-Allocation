@@ -678,9 +678,11 @@ if (isDashboardPage) {
 
   const btnViewBoard = document.getElementById("btn-view-board");
   const btnViewMap = document.getElementById("btn-view-map");
+  const btnViewBlockchain = document.getElementById("btn-view-blockchain");
   const mapViewContainer = document.getElementById("map-view-container");
+  const blockchainViewContainer = document.getElementById("blockchain-view-container");
 
-  let currentView = "board"; // "board" or "map"
+  let currentView = "board"; // "board" or "map" or "blockchain"
   let map = null;
   let mapMarkers = [];
   let shouldFitMapBounds = true;
@@ -1259,6 +1261,13 @@ if (isDashboardPage) {
           </div>
         `;
 
+        const walletLabel = vol.walletAddress ? `${vol.walletAddress.substring(0, 8)}...${vol.walletAddress.substring(34)}` : 'No wallet';
+        const walletHtml = `
+          <div class="roster-meta text-white-50 font-monospace" style="font-size:0.75rem; word-break: break-all;" title="${vol.walletAddress || ''}">
+            <i class="bi bi-wallet2 me-1"></i>Address: <span>${walletLabel}</span>
+          </div>
+        `;
+
         return `
           <div class="roster-card">
             <div class="roster-header">
@@ -1276,6 +1285,7 @@ if (isDashboardPage) {
               <i class="bi bi-telephone-fill text-success"></i>
               <a href="tel:${vol.phone}">${vol.phone}</a>
             </div>
+            ${walletHtml}
             ${ratingHtml}
             <div class="roster-skills mt-2">
               <div class="roster-skills-badges">${skillsBadges}</div>
@@ -1455,6 +1465,7 @@ if (isDashboardPage) {
       const name = document.getElementById("vol-name").value.trim();
       const phone = document.getElementById("vol-phone").value.trim();
       const zone = document.getElementById("vol-zone").value;
+      const walletAddress = document.getElementById("vol-wallet").value.trim();
       
       // Collect selected skills
       const skillCheckboxes = document.querySelectorAll(".vol-skill-checkbox:checked");
@@ -1472,7 +1483,7 @@ if (isDashboardPage) {
         const res = await fetch(`${API_BASE}/api/volunteers`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, phone, zone, skills })
+          body: JSON.stringify({ name, phone, zone, skills, walletAddress })
         });
         
         if (res.ok) {
@@ -1695,14 +1706,172 @@ if (isDashboardPage) {
     }
   }
 
+  // ── Blockchain Explorer Logic ──
+  async function loadBlockchainStats() {
+    try {
+      const [statsRes, blocksRes, sbtsRes] = await Promise.all([
+        fetch(`${API_BASE}/api/blockchain/explorer/stats`),
+        fetch(`${API_BASE}/api/blockchain/explorer/blocks`),
+        fetch(`${API_BASE}/api/blockchain/explorer/sbts`)
+      ]);
+
+      if (statsRes.ok && blocksRes.ok && sbtsRes.ok) {
+        const statsData = await statsRes.json();
+        const blocksData = await blocksRes.json();
+        const sbtsData = await sbtsRes.json();
+
+        const stats = statsData.stats;
+        document.getElementById("blockchain-net-name").textContent = stats.networkName;
+        document.getElementById("blockchain-block-height").textContent = stats.blockHeight;
+        document.getElementById("blockchain-total-sbts").textContent = stats.totalSBTs;
+        document.getElementById("blockchain-contract-addr").textContent = stats.contractAddress;
+
+        // Render Ledger Blocks & Transactions
+        const ledgerBody = document.getElementById("blockchain-ledger-body");
+        const ledgerEmpty = document.getElementById("blockchain-ledger-empty");
+        const blocks = blocksData.blocks || [];
+        
+        // Extract transactions from blocks
+        const txs = [];
+        blocks.forEach(block => {
+          (block.transactions || []).forEach(t => {
+            txs.push({
+              ...t,
+              blockNumber: block.number,
+              timestamp: block.timestamp,
+              confirmations: stats.blockHeight - block.number + 1
+            });
+          });
+        });
+
+        if (txs.length === 0) {
+          ledgerBody.innerHTML = "";
+          ledgerEmpty.classList.remove("d-none");
+        } else {
+          ledgerEmpty.classList.add("d-none");
+          ledgerBody.innerHTML = txs.map(tx => {
+            const shortHash = `${tx.hash.substring(0, 10)}...${tx.hash.substring(56)}`;
+            const methodBadge = tx.method === "mintSBT" 
+              ? `<span class="badge" style="background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.3) !important; color: #fcd34d;">MintSBT</span>`
+              : `<span class="badge" style="background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.3) !important; color: #c7d2fe;">RecordRescue</span>`;
+            
+            return `
+              <tr>
+                <td><span class="text-white fw-bold">#${tx.blockNumber}</span></td>
+                <td>${methodBadge}</td>
+                <td>
+                  <a href="#" class="font-monospace text-info verify-tx-hash" data-hash="${tx.hash}" style="font-size:0.75rem;">${shortHash}</a>
+                </td>
+                <td><span class="text-muted small">${tx.gasUsed}</span></td>
+                <td>
+                  <span class="text-white-50 text-truncate d-inline-block" style="max-width: 180px; font-size:0.72rem;">
+                    ${tx.method === "mintSBT" ? `Mint SBT #${tx.payload.tokenId} to ${tx.payload.volunteerName}` : `Resolve Request: ${tx.payload.requestId.substring(0,8)}...`}
+                  </span>
+                </td>
+              </tr>
+            `;
+          }).join("");
+
+          // Click handler to verify tx
+          ledgerBody.querySelectorAll(".verify-tx-hash").forEach(link => {
+            link.addEventListener("click", (e) => {
+              e.preventDefault();
+              const hash = link.dataset.hash;
+              const txObj = txs.find(t => t.hash === hash);
+              if (txObj) showTxReceipt(txObj);
+            });
+          });
+        }
+
+        // Render SBT list
+        const sbtList = document.getElementById("blockchain-sbt-list");
+        const sbts = sbtsData.sbts || [];
+        if (sbts.length === 0) {
+          sbtList.innerHTML = `
+            <div class="empty-column py-5" style="border-style: dashed; border-radius: 12px; background: rgba(0,0,0,0.15);">
+              <i class="bi bi-shield-slash fs-3 d-block mb-2 text-warning"></i>
+              No Soulbound Credentials minted yet
+            </div>
+          `;
+        } else {
+          sbtList.innerHTML = sbts.map(s => {
+            const shortWallet = `${s.volunteerAddress.substring(0, 10)}...${s.volunteerAddress.substring(34)}`;
+            const stars = Array(s.rating).fill('<i class="bi bi-star-fill text-warning me-0.5"></i>').join("") +
+                          Array(5 - s.rating).fill('<i class="bi bi-star text-secondary me-0.5"></i>').join("");
+            
+            return `
+              <div class="p-3 rounded text-start mb-2" style="background: rgba(15, 23, 42, 0.45); border: 1px solid var(--glass-border); border-left: 4px solid var(--warning);">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap">
+                  <h5 class="fs-6 fw-bold text-white mb-0"><i class="bi bi-patch-check-fill text-success me-1"></i>Token ID #${s.tokenId}</h5>
+                  <span class="badge" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3) !important; color: #6ee7b7; font-size:0.7rem;">Verified SBT</span>
+                </div>
+                <div class="text-white-50 small mb-1"><strong>Volunteer:</strong> ${s.volunteerName}</div>
+                <div class="text-white-50 small mb-1"><strong>Wallet:</strong> <span class="font-monospace" style="font-size:0.72rem;">${shortWallet}</span></div>
+                <div class="text-white-50 small mb-1"><strong>Skills/Cat:</strong> ${getCategoryWithIcon(s.category)}</div>
+                <div class="text-white-50 small mb-1"><strong>Hours Logged:</strong> ${s.hoursWorked} hrs</div>
+                <div class="text-white-50 small mb-2 d-flex align-items-center">
+                  <strong class="me-1">Rating:</strong> <span class="d-inline-flex">${stars}</span>
+                </div>
+                <div class="p-2 rounded mb-2 text-white-50 small" style="background: rgba(0,0,0,0.2); font-style: italic;">
+                  "${s.feedback}"
+                </div>
+                <button class="btn btn-outline-warning btn-xs py-1 px-2.5 verify-sbt-btn text-xs font-monospace w-100" data-hash="${s.txHash}" style="font-size:0.7rem; border-radius:6px;">
+                  <i class="bi bi-shield-fill-check me-1"></i>Verify On-Chain
+                </button>
+              </div>
+            `;
+          }).join("");
+
+          // Click handler for verified SBT link
+          sbtList.querySelectorAll(".verify-sbt-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+              const hash = btn.dataset.hash;
+              const txObj = txs.find(t => t.hash === hash) || {
+                hash: hash,
+                method: "mintSBT",
+                from: "0x4fe63...91ad",
+                to: stats.contractAddress,
+                blockNumber: sbts.find(s => s.txHash === hash)?.blockNumber || stats.blockHeight,
+                timestamp: sbts.find(s => s.txHash === hash)?.timestamp || Date.now(),
+                gasUsed: 89403,
+                payload: sbts.find(s => s.txHash === hash)
+              };
+              showTxReceipt(txObj);
+            });
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Error loading L2 blockchain data:", err);
+    }
+  }
+
+  function showTxReceipt(tx) {
+    const modalEl = document.getElementById("tx-receipt-modal");
+    if (!modalEl) return;
+    
+    document.getElementById("receipt-tx-hash").textContent = tx.hash;
+    document.getElementById("receipt-block-num").textContent = `#${tx.blockNumber}`;
+    document.getElementById("receipt-timestamp").textContent = new Date(tx.timestamp).toLocaleString();
+    document.getElementById("receipt-from").textContent = tx.from;
+    document.getElementById("receipt-to").textContent = tx.to;
+    document.getElementById("receipt-gas").textContent = `${tx.gasUsed} gas`;
+    document.getElementById("receipt-payload").textContent = JSON.stringify(tx.payload, null, 2);
+
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+  }
+
   // ── View Toggle Events ──
-  if (btnViewBoard && btnViewMap) {
+  if (btnViewBoard && btnViewMap && btnViewBlockchain) {
     btnViewBoard.addEventListener("click", () => {
       if (currentView === "board") return;
       currentView = "board";
       btnViewBoard.classList.add("active");
       btnViewMap.classList.remove("active");
+      btnViewBlockchain.classList.remove("active");
       mapViewContainer.classList.add("d-none");
+      blockchainViewContainer.classList.add("d-none");
       kanbanBoard.classList.remove("d-none");
       applyFilters();
     });
@@ -1712,7 +1881,9 @@ if (isDashboardPage) {
       currentView = "map";
       btnViewMap.classList.add("active");
       btnViewBoard.classList.remove("active");
+      btnViewBlockchain.classList.remove("active");
       kanbanBoard.classList.add("d-none");
+      blockchainViewContainer.classList.add("d-none");
       mapViewContainer.classList.remove("d-none");
       
       shouldFitMapBounds = true;
@@ -1722,6 +1893,40 @@ if (isDashboardPage) {
         applyFilters();
       }, 100);
     });
+
+    btnViewBlockchain.addEventListener("click", () => {
+      if (currentView === "blockchain") return;
+      currentView = "blockchain";
+      btnViewBlockchain.classList.add("active");
+      btnViewBoard.classList.remove("active");
+      btnViewMap.classList.remove("active");
+      kanbanBoard.classList.add("d-none");
+      mapViewContainer.classList.add("d-none");
+      blockchainViewContainer.classList.remove("d-none");
+      
+      loadBlockchainStats();
+    });
+
+    // Check URL parameters for direct view routing
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewParam = urlParams.get("view");
+    const txParam = urlParams.get("tx");
+    
+    if (viewParam === "blockchain") {
+      setTimeout(() => {
+        btnViewBlockchain.click();
+        if (txParam) {
+          let checkInterval = setInterval(() => {
+            const txLink = document.querySelector(`.verify-tx-hash[data-hash="${txParam}"]`);
+            if (txLink) {
+              txLink.click();
+              clearInterval(checkInterval);
+            }
+          }, 300);
+          setTimeout(() => clearInterval(checkInterval), 5000);
+        }
+      }, 500);
+    }
   }
 
   // Initial load
@@ -1739,6 +1944,9 @@ if (isDashboardPage) {
     }
     if (!unsubscribeFirestore) {
       loadRequests();
+    }
+    if (currentView === "blockchain") {
+      loadBlockchainStats();
     }
   }, 10000);
 }

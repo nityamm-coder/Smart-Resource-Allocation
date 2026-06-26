@@ -271,9 +271,15 @@
           </div>
 
           <div id="rating-success-container" class="d-none text-center py-4">
-            <i class="bi bi-heart-fill text-danger fs-1 animate-pulse d-block mb-3"></i>
-            <h4 class="fw-bold text-white mb-2">Thank You for Your Feedback!</h4>
-            <p class="text-muted small mb-0">Your rating has been recorded successfully. Stay safe!</p>
+            <i class="bi bi-shield-fill-check text-success fs-1 d-block mb-3" style="animation: pulse-indigo 2s infinite;"></i>
+            <h4 class="fw-bold text-white mb-2">Thank You! Rating Secured On-Chain</h4>
+            <p class="text-muted small mb-3">Your feedback was successfully written to the L2 EVM trust layer.</p>
+            <div class="p-3 rounded text-start mb-3 font-monospace" style="font-size:0.75rem; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
+              <div class="mb-1 text-white-50">SBT Minted: <strong class="text-warning" id="success-sbt-id">#0</strong></div>
+              <div class="mb-1 text-white-50 text-truncate">L2 Tx: <a href="" id="success-tx-link" target="_blank" class="text-info text-break font-monospace">0x00...</a></div>
+              <div class="text-muted">Block: <span id="success-block-num">--</span></div>
+            </div>
+            <p class="text-muted small mb-0">This verified record has been minted as a Soulbound Token (SBT) for your volunteer.</p>
           </div>
         </div>
       </div>
@@ -456,6 +462,8 @@
           throw new Error(err.error || "Failed to submit rating.");
         }
 
+        const resData = await res.json();
+
         // Play Confetti!
         if (window.confetti) {
           confetti({
@@ -465,7 +473,18 @@
           });
         }
 
-        // Display Success View
+        // Display Success View with Blockchain Details
+        document.getElementById("success-sbt-id").textContent = `#${resData.tokenId || 'N/A'}`;
+        const txLink = document.getElementById("success-tx-link");
+        if (txLink) {
+          txLink.textContent = resData.txHash ? `${resData.txHash.substring(0, 18)}...` : '0x...';
+          txLink.href = `dashboard.html?view=blockchain&tx=${resData.txHash}`;
+        }
+        const blockNumSpan = document.getElementById("success-block-num");
+        if (blockNumSpan) {
+          blockNumSpan.textContent = resData.blockNumber || '--';
+        }
+
         ratingFormContainer.classList.add("d-none");
         ratingSuccessContainer.classList.remove("d-none");
 
@@ -659,6 +678,19 @@
         ratingCard.classList.remove("d-none");
         if (data.rating !== undefined && data.rating !== null) {
           ratingFormContainer.classList.add("d-none");
+          
+          // Populate blockchain values if they exist
+          document.getElementById("success-sbt-id").textContent = data.blockchainSbtId ? `#${data.blockchainSbtId}` : '#N/A';
+          const txLink = document.getElementById("success-tx-link");
+          if (txLink) {
+            txLink.textContent = data.blockchainSbtTx ? `${data.blockchainSbtTx.substring(0, 18)}...` : '0x...';
+            txLink.href = `dashboard.html?view=blockchain&tx=${data.blockchainSbtTx}`;
+          }
+          const blockNumSpan = document.getElementById("success-block-num");
+          if (blockNumSpan) {
+            blockNumSpan.textContent = data.blockchainSbtBlock || '--';
+          }
+          
           ratingSuccessContainer.classList.remove("d-none");
         } else {
           // Reset form container if previously hidden (e.g. status toggled resolved back and forth during tests)
