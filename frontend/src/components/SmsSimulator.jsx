@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, PhoneCall, Trash2, Send, Cpu, Loader2, CheckCircle2, ArrowRight } from 'lucide-react';
+import { MessageSquare, PhoneCall, Trash2, Send, Cpu, Loader2, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SmsSimulator() {
@@ -110,10 +110,10 @@ export default function SmsSimulator() {
       {/* Floating Action Button (FAB) */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-nature-primary hover:bg-nature-primaryHover text-white shadow-nature-lg flex items-center justify-center transition-all hover:scale-105"
+        className="fixed bottom-6 right-6 z-40 w-14 h-14 rounded-full bg-gradient-to-br from-emerald-500 to-teal-500 text-white shadow-[0_4px_15px_rgba(16,185,129,0.25)] hover:shadow-[0_4px_25px_rgba(16,185,129,0.45)] flex items-center justify-center transition-all duration-300 hover:scale-105"
         title="Simulate Offline SMS Gateway"
       >
-        <MessageSquare size={24} className="text-white" />
+        <MessageSquare size={22} className="text-white" />
       </button>
 
       {/* Slide-over Drawer / Modal overlay */}
@@ -123,10 +123,10 @@ export default function SmsSimulator() {
             {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
+              animate={{ opacity: 0.3 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsOpen(false)}
-              className="absolute inset-0 bg-nature-text"
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
             />
 
             {/* Content Drawer */}
@@ -134,54 +134,54 @@ export default function SmsSimulator() {
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-              className="relative w-full max-w-md h-full bg-nature-bg border-l border-nature-borderSage shadow-nature-lg flex flex-col p-6 overflow-y-auto"
+              transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+              className="relative w-full max-w-md h-full bg-white/95 border-l border-slate-200 shadow-2xl flex flex-col p-6 overflow-y-auto scrollbar-thin"
             >
               {/* Header */}
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-display font-bold text-lg text-nature-text flex items-center gap-2">
+              <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <h3 className="font-display font-extrabold text-lg text-slate-800 flex items-center gap-2">
                   <span>📟</span> Offline SMS Gateway
                 </h3>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="w-8 h-8 rounded-full border border-nature-borderSage hover:bg-nature-sageLight flex items-center justify-center text-sm font-bold text-nature-textMuted"
+                  className="w-8 h-8 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-sm font-bold text-slate-650 transition-all duration-300"
                 >
                   ✕
                 </button>
               </div>
 
-              <p className="text-xs text-nature-textMuted mb-6 leading-relaxed">
+              <p className="text-xs text-slate-500 mb-6 leading-relaxed">
                 In disaster zones without internet, victims send a standard SMS to our gateway. Use this phone mock to simulate sending a raw SMS message and watch how Gemini AI parses it.
               </p>
 
-              {/* Simulated Phone Chassis */}
-              <div className="border-[6px] border-nature-text bg-nature-text rounded-[32px] overflow-hidden shadow-xl flex-grow max-h-[500px] flex flex-col">
+              {/* Simulated Phone Chassis (Silver Bezel) */}
+              <div className="border-[6px] border-slate-400 bg-slate-200 rounded-[32px] overflow-hidden shadow-xl flex-grow max-h-[480px] flex flex-col">
                 {/* Phone Header */}
-                <div className="bg-nature-text text-white/80 py-2 px-4 flex justify-between items-center text-xs">
-                  <div className="flex items-center gap-1 font-semibold">
-                    <PhoneCall size={12} className="text-nature-leaf" />
-                    <span>Emergency SMS Gateway</span>
+                <div className="bg-slate-300 text-slate-750 py-2.5 px-4 flex justify-between items-center text-xs border-b border-slate-400/30">
+                  <div className="flex items-center gap-1.5 font-bold">
+                    <PhoneCall size={11} className="text-emerald-700" />
+                    <span className="text-[10px] uppercase tracking-widest text-slate-700">SMS Gateway Link</span>
                   </div>
                   <button
                     onClick={handleClear}
-                    className="text-white/60 hover:text-red-400 transition-colors"
+                    className="text-slate-600 hover:text-red-650 transition-colors"
                     title="Clear Logs"
                   >
                     <Trash2 size={12} />
                   </button>
                 </div>
 
-                {/* Chat Screen Body */}
-                <div className="flex-grow bg-[#F1F3F0] p-4 overflow-y-auto space-y-3 text-xs flex flex-col justify-start">
+                {/* Chat Screen Body (Light screen) */}
+                <div className="flex-grow bg-[#E8EDE6] p-4 overflow-y-auto space-y-3 text-xs flex flex-col justify-start scrollbar-thin">
                   {messages.map((msg, i) => (
                     <div
                       key={i}
-                      className={`max-w-[85%] rounded-xl p-3 leading-normal ${
+                      className={`max-w-[85%] rounded-2xl p-3 leading-normal border ${
                         msg.sender === 'user'
-                          ? 'bg-nature-primary text-white self-end rounded-tr-none'
+                          ? 'bg-emerald-600 border-emerald-500 text-white self-end rounded-tr-none shadow-sm'
                           : msg.sender === 'system'
-                          ? 'bg-nature-sageLight border border-nature-sage/30 text-nature-text self-start rounded-tl-none font-medium'
-                          : 'bg-white text-nature-text border border-nature-borderSage self-start rounded-tl-none'
+                          ? 'bg-emerald-50 border-emerald-250 text-emerald-800 self-start rounded-tl-none font-semibold shadow-sm'
+                          : 'bg-white border-slate-200 text-slate-800 self-start rounded-tl-none'
                       }`}
                     >
                       {msg.text}
@@ -190,13 +190,13 @@ export default function SmsSimulator() {
                 </div>
 
                 {/* Chat Input inside phone */}
-                <form onSubmit={handleSend} className="bg-white p-3 border-t border-nature-borderSage flex flex-col gap-2">
+                <form onSubmit={handleSend} className="bg-slate-100 p-3 border-t border-slate-300/30 flex flex-col gap-2">
                   <input
                     type="tel"
                     placeholder="Sender's Phone Number"
                     value={senderPhone}
                     onChange={(e) => setSenderPhone(e.target.value)}
-                    className="rounded-lg border border-nature-borderSage px-2.5 py-1.5 text-xs focus:outline-none focus:border-nature-sage text-nature-text"
+                    className="rounded-xl border border-slate-250 bg-white px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-800 placeholder-slate-400"
                     required
                   />
                   <div className="flex gap-2">
@@ -204,18 +204,18 @@ export default function SmsSimulator() {
                       placeholder="Type raw emergency SMS..."
                       value={smsText}
                       onChange={(e) => setSmsText(e.target.value)}
-                      className="flex-grow rounded-lg border border-nature-borderSage px-2.5 py-1.5 text-xs focus:outline-none focus:border-nature-sage text-nature-text resize-none h-12"
+                      className="flex-grow rounded-xl border border-slate-250 bg-white px-3 py-2 text-xs focus:outline-none focus:border-emerald-500 text-slate-800 placeholder-slate-400 resize-none h-12 scrollbar-none"
                       required
                     />
                     <button
                       type="submit"
                       disabled={loading}
-                      className="px-3 rounded-lg bg-nature-primary text-white hover:bg-nature-primaryHover transition-all flex items-center justify-center"
+                      className="px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-all flex items-center justify-center shadow-sm shrink-0"
                     >
                       {loading ? (
-                        <Loader2 size={14} className="animate-spin" />
+                        <Loader2 size={13} className="animate-spin" />
                       ) : (
-                        <Send size={14} />
+                        <Send size={13} />
                       )}
                     </button>
                   </div>
@@ -224,22 +224,22 @@ export default function SmsSimulator() {
 
               {/* Console Logs Output */}
               {showConsole && (
-                <div className="mt-4 bg-[#1E2E24] rounded-xl p-4 text-left font-mono border border-nature-borderSage/50">
-                  <div className="flex items-center gap-1.5 text-[10px] text-nature-sage uppercase tracking-wider mb-2 font-bold">
+                <div className="mt-5 bg-[#080E0B] rounded-2xl p-4 text-left font-mono border border-emerald-950/20 shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
+                  <div className="flex items-center gap-1.5 text-[9px] text-emerald-400 uppercase tracking-widest mb-2.5 font-bold border-b border-white/5 pb-1">
                     <Cpu size={12} className="animate-pulse" />
                     <span>Gateway Console Logs</span>
                   </div>
-                  <div className="space-y-1 text-[11px]">
+                  <div className="space-y-1 text-[11px] max-h-[100px] overflow-y-auto scrollbar-thin">
                     {consoleLogs.map((log, index) => (
                       <div key={index} className="flex gap-1.5 items-start">
-                        <span className="text-white/40">&gt;</span>
+                        <span className="text-white/20">&gt;</span>
                         <span
                           className={
                             log.status === 'error'
                               ? 'text-red-400'
                               : log.status === 'success'
-                              ? 'text-nature-sage font-bold'
-                              : 'text-white/80'
+                              ? 'text-emerald-400 font-bold'
+                              : 'text-slate-400'
                           }
                         >
                           {log.msg}
@@ -252,10 +252,10 @@ export default function SmsSimulator() {
                     <div className="mt-3 text-right">
                       <a
                         href={`tracking.html?id=${trackLink}`}
-                        className="inline-flex items-center gap-1 px-3 py-1 rounded bg-nature-sage text-white text-xs font-bold hover:bg-nature-sage/95 transition-all shadow"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:bg-emerald-600 transition-all duration-300 shadow-sm"
                       >
                         Track Request
-                        <ArrowRight size={12} />
+                        <ArrowRight size={11} />
                       </a>
                     </div>
                   )}

@@ -83,3 +83,77 @@
 .custom-toast.info {
   border-left: 4px solid #3b82f6;
 }
+
+/* Glassmorphism & Cyber Glows (Light-Theme Optimized) */
+.glass-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(45, 90, 39, 0.1);
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.04), 0 1px 2px rgba(45, 90, 39, 0.01);
+}
+
+.glass-card:hover {
+  border-color: rgba(16, 185, 129, 0.35);
+  box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.08), 0 1px 3px rgba(45, 90, 39, 0.02);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(45, 90, 39, 0.15);
+  color: #1b3b2b;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.glass-input:focus {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(16, 185, 129, 0.6);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.12);
+  outline: none;
+}
+
+/* Glowing text and objects */
+.text-neon-green {
+  text-shadow: 0 0 6px rgba(16, 185, 129, 0.15);
+}
+
+.glow-ring {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.15), inset 0 0 10px rgba(16, 185, 129, 0.08);
+}
+
+/* Animated SVG path for matchmaking connection line */
+@keyframes dash {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+.animate-dash-line {
+  stroke-dasharray: 8, 4;
+  animation: dash 1.5s linear infinite;
+}
+
+/* Radar ping animations */
+@keyframes ping-slow {
+  0% { transform: scale(1); opacity: 0.8; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.animate-ping-slow {
+  animation: ping-slow 3s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+}
+
+/* Custom radial gradient backdrops */
+.ambient-glow-1 {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.1) 0%, transparent 70%);
+}
+
+.ambient-glow-2 {
+  background: radial-gradient(circle, rgba(20, 184, 166, 0.08) 0%, transparent 60%);
+}
+
+.ambient-glow-3 {
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.06) 0%, transparent 50%);
+}
+
+

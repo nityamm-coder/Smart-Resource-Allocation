@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CircleAlert, Award, Zap } from 'lucide-react';
+import { Award, Zap } from 'lucide-react';
 
 export default function ImpactStats() {
   const [resolvedCount, setResolvedCount] = useState(0);
@@ -27,49 +27,53 @@ export default function ImpactStats() {
 
   return (
     <section className="max-w-5xl mx-auto px-6 -mt-8 relative z-20">
-      <div className="bg-white border border-nature-borderSage rounded-2xl p-6 sm:p-8 shadow-nature-lg">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4 divide-y sm:divide-y-0 sm:divide-x divide-nature-borderSage/50">
-          
-          {/* Stat 1 */}
-          <div className="flex flex-col items-center text-center p-3 sm:first:pl-0">
-            <div className="w-10 h-10 rounded-full bg-nature-sageLight flex items-center justify-center text-nature-primary mb-3">
-              <Award size={20} className="text-nature-primary" />
-            </div>
-            <h3 className="font-display font-extrabold text-3xl md:text-4xl text-nature-text tracking-tight mb-1">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        {/* Stat 1 */}
+        <div className="glass-card rounded-2xl p-6 flex items-center gap-4 transition-all duration-300 transform hover:-translate-y-1">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/20 border border-emerald-500/20 text-emerald-600 flex items-center justify-center shadow-sm">
+            <Award size={22} />
+          </div>
+          <div>
+            <h3 className="font-display font-extrabold text-3xl text-slate-800 tracking-tight leading-none mb-1">
               {resolvedCount > 0 ? resolvedCount : '14'}
             </h3>
-            <p className="text-xs font-bold text-nature-textMuted uppercase tracking-wider">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
               Requests Resolved
             </p>
           </div>
+        </div>
 
-          {/* Stat 2 */}
-          <div className="flex flex-col items-center text-center p-3 sm:px-4">
-            <div className="w-10 h-10 rounded-full bg-nature-sageLight flex items-center justify-center text-nature-primary mb-3">
-              <Zap size={20} className="text-nature-leaf" />
-            </div>
-            <h3 className="font-display font-extrabold text-3xl md:text-4xl text-nature-text tracking-tight mb-1">
+        {/* Stat 2 */}
+        <div className="glass-card rounded-2xl p-6 flex items-center gap-4 transition-all duration-300 transform hover:-translate-y-1">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/20 border border-emerald-500/20 text-emerald-600 flex items-center justify-center shadow-sm">
+            <Zap size={22} className="text-emerald-500 animate-pulse" />
+          </div>
+          <div>
+            <h3 className="font-display font-extrabold text-3xl text-slate-800 tracking-tight leading-none mb-1">
               &lt; 15m
             </h3>
-            <p className="text-xs font-bold text-nature-textMuted uppercase tracking-wider">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
               Avg Volunteer Dispatch
             </p>
           </div>
+        </div>
 
-          {/* Stat 3 */}
-          <div className="flex flex-col items-center text-center p-3 sm:last:pr-0">
-            <div className="w-10 h-10 rounded-full bg-nature-sageLight flex items-center justify-center text-nature-primary mb-3">
-              <span className="text-lg">🤝</span>
-            </div>
-            <h3 className="font-display font-extrabold text-3xl md:text-4xl text-nature-text tracking-tight mb-1">
+        {/* Stat 3 */}
+        <div className="glass-card rounded-2xl p-6 flex items-center gap-4 transition-all duration-300 transform hover:-translate-y-1">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/20 border border-emerald-500/20 text-white flex items-center justify-center shadow-sm text-xl">
+            🤝
+          </div>
+          <div>
+            <h3 className="font-display font-extrabold text-3xl text-slate-800 tracking-tight leading-none mb-1">
               98.4%
             </h3>
-            <p className="text-xs font-bold text-nature-textMuted uppercase tracking-wider">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest leading-none">
               Successful Aid Delivery
             </p>
           </div>
-
         </div>
+
       </div>
     </section>
   );

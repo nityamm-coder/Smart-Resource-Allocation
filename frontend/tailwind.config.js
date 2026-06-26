@@ -33,6 +33,20 @@ export default {
         'nature': '0 8px 30px rgba(45, 90, 39, 0.04)',
         'nature-lg': '0 10px 40px rgba(45, 90, 39, 0.08)',
         'nature-sm': '0 4px 15px rgba(45, 90, 39, 0.02)',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-8px)' },
+        },
+        pulseGlow: {
+          '0%, 100%': { opacity: '0.2', transform: 'scale(1)' },
+          '50%': { opacity: '0.4', transform: 'scale(1.08)' },
+        }
+      },
+      animation: {
+        float: 'float 6s ease-in-out infinite',
+        pulseGlow: 'pulseGlow 8s ease-in-out infinite',
       }
     },
   },

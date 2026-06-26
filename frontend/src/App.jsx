@@ -5,13 +5,18 @@ import ImpactStats from './components/ImpactStats';
 import SubmitRequestForm from './components/SubmitRequestForm';
 import MatchmakingVisualizer from './components/MatchmakingVisualizer';
 import SmsSimulator from './components/SmsSimulator';
+import NetworkCanvas from './components/NetworkCanvas';
 import { PencilLine, Cpu, CheckCircle } from 'lucide-react';
 
 export default function App() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   return (
-    <div className="min-h-screen bg-nature-bg flex flex-col font-sans select-none antialiased selection:bg-nature-sageLight/60 selection:text-nature-primary">
+    <div className="min-h-screen bg-gradient-to-br from-[#FAFBF9] via-[#ECF2EE] to-[#F1F6F3] text-slate-700 flex flex-col font-sans select-none antialiased selection:bg-emerald-500/10 selection:text-emerald-800 relative overflow-x-hidden">
+      
+      {/* Interactive Network Graph Background (Visible on Light Background) */}
+      <NetworkCanvas />
+
       {/* Navbar */}
       <Navbar />
 
@@ -22,7 +27,7 @@ export default function App() {
       <ImpactStats />
 
       {/* Main Grid: Form and Visualizer Columns */}
-      <main className="max-w-7xl mx-auto px-6 py-12 md:py-16 w-full flex-grow">
+      <main className="max-w-7xl mx-auto px-6 py-12 md:py-16 w-full flex-grow relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
           {/* Left Column: Form */}
@@ -38,49 +43,49 @@ export default function App() {
         </div>
 
         {/* How It Works section */}
-        <section className="mt-16 md:mt-24 max-w-4xl mx-auto text-center space-y-10">
-          <div className="space-y-2">
-            <span className="text-[10px] font-bold text-nature-leaf uppercase tracking-wider bg-nature-sageLight px-3 py-1 rounded-full border border-nature-borderSage/60">
+        <section className="mt-20 md:mt-28 max-w-5xl mx-auto text-center space-y-12">
+          <div className="space-y-3">
+            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-widest bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-500/20 shadow-sm animate-pulse">
               Process Pipeline
             </span>
-            <h2 className="font-display font-bold text-2xl md:text-3xl text-nature-text">
+            <h2 className="font-display font-extrabold text-2xl md:text-3.5xl text-slate-800 tracking-tight">
               How the Dispatch System Works
             </h2>
-            <p className="text-sm text-nature-textMuted max-w-md mx-auto">
+            <p className="text-sm text-slate-500 max-w-md mx-auto">
               Our automated system links emergency reports directly to community volunteer networks.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {/* Step 1 */}
-            <div className="bg-white border border-nature-borderSage rounded-2xl p-6 shadow-nature hover:-translate-y-1 transition-transform space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-nature-sageLight/50 border border-nature-borderSage text-nature-primary flex items-center justify-center mx-auto shadow-nature-sm">
-                <PencilLine size={20} className="text-nature-primary" />
+            <div className="glass-card rounded-2xl p-6 shadow-md transition-all duration-300 transform hover:-translate-y-1.5 space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 flex items-center justify-center mx-auto shadow-sm">
+                <PencilLine size={20} />
               </div>
-              <h4 className="font-display font-bold text-sm text-nature-text">1. Describe the Need</h4>
-              <p className="text-xs text-nature-textMuted leading-relaxed">
+              <h4 className="font-display font-bold text-sm text-slate-800">1. Describe the Need</h4>
+              <p className="text-xs text-slate-500 leading-relaxed">
                 Provide details in English or regional languages (Hindi, Marathi, Hinglish) via our Web form or raw SMS gateway.
               </p>
             </div>
 
             {/* Step 2 */}
-            <div className="bg-white border border-nature-borderSage rounded-2xl p-6 shadow-nature hover:-translate-y-1 transition-transform space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-nature-sageLight/50 border border-nature-borderSage text-nature-primary flex items-center justify-center mx-auto shadow-nature-sm">
-                <Cpu size={20} className="text-nature-leaf" />
+            <div className="glass-card rounded-2xl p-6 shadow-md transition-all duration-300 transform hover:-translate-y-1.5 space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-teal-500/10 border border-teal-500/20 text-teal-700 flex items-center justify-center mx-auto shadow-sm">
+                <Cpu size={20} className="animate-pulse" />
               </div>
-              <h4 className="font-display font-bold text-sm text-nature-text">2. AI Processes Urgency</h4>
-              <p className="text-xs text-nature-textMuted leading-relaxed">
+              <h4 className="font-display font-bold text-sm text-slate-800">2. AI Processes Urgency</h4>
+              <p className="text-xs text-slate-500 leading-relaxed">
                 Gemini AI parses raw text, translates, categorizes (Food, Medical, Shelter), and scores urgency from 1 to 5.
               </p>
             </div>
 
             {/* Step 3 */}
-            <div className="bg-white border border-nature-borderSage rounded-2xl p-6 shadow-nature hover:-translate-y-1 transition-transform space-y-4">
-              <div className="w-12 h-12 rounded-xl bg-nature-sageLight/50 border border-nature-borderSage text-nature-primary flex items-center justify-center mx-auto shadow-nature-sm">
-                <CheckCircle size={20} className="text-nature-sage" />
+            <div className="glass-card rounded-2xl p-6 shadow-md transition-all duration-300 transform hover:-translate-y-1.5 space-y-4">
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 flex items-center justify-center mx-auto shadow-sm">
+                <CheckCircle size={20} />
               </div>
-              <h4 className="font-display font-bold text-sm text-nature-text">3. Volunteer Matched</h4>
-              <p className="text-xs text-nature-textMuted leading-relaxed">
+              <h4 className="font-display font-bold text-sm text-white md:text-slate-800">3. Volunteer Matched</h4>
+              <p className="text-xs text-slate-500 leading-relaxed">
                 The algorithm automatically finds the best nearby available volunteer based on skills, locality, and workload.
               </p>
             </div>
@@ -92,15 +97,15 @@ export default function App() {
       <SmsSimulator />
 
       {/* Footer */}
-      <footer className="border-t border-nature-borderSage bg-white/40 py-8 px-6 text-center text-xs font-semibold text-nature-textMuted">
+      <footer className="border-t border-slate-200/50 bg-slate-50/50 py-8 px-6 text-center text-xs font-semibold text-slate-500 relative z-10">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
           <p>© 2026 Smart Community Resource Allocation. Developed for relief coordination.</p>
           <div className="flex gap-4">
-            <a href="index.html" className="hover:text-nature-primary transition-colors">Submit Portal</a>
+            <a href="index.html" className="hover:text-emerald-600 transition-colors">Submit Portal</a>
             <span>·</span>
-            <a href="dashboard.html" className="hover:text-nature-primary transition-colors">NGO Dashboard</a>
+            <a href="dashboard.html" className="hover:text-emerald-600 transition-colors">NGO Dashboard</a>
             <span>·</span>
-            <a href="tracking.html" className="hover:text-nature-primary transition-colors">Tracking Portal</a>
+            <a href="tracking.html" className="hover:text-emerald-600 transition-colors">Tracking Portal</a>
           </div>
         </div>
       </footer>

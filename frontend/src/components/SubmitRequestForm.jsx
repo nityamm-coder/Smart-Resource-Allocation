@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Navigation, Send, Loader2, MapPin, CheckCircle } from 'lucide-react';
+import { Navigation, Send, Loader2, MapPin, CheckCircle, AlertTriangle } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export default function SubmitRequestForm({ onSubmittingStateChange }) {
@@ -107,8 +107,8 @@ export default function SubmitRequestForm({ onSubmittingStateChange }) {
 
       // Fire confetti celebration!
       confetti({
-        particleCount: 120,
-        spread: 70,
+        particleCount: 150,
+        spread: 80,
         origin: { y: 0.6 }
       });
 
@@ -133,21 +133,26 @@ export default function SubmitRequestForm({ onSubmittingStateChange }) {
   };
 
   return (
-    <div className="bg-white border border-nature-borderSage rounded-2xl p-6 sm:p-8 shadow-nature-lg">
-      <h2 className="font-display font-bold text-xl md:text-2xl text-nature-text mb-6 flex items-center gap-2">
-        <span className="text-2xl">📝</span>
+    <div className="glass-card rounded-3xl p-6 sm:p-8 transition-all duration-300">
+      <h2 className="font-display font-extrabold text-xl md:text-2xl text-slate-800 mb-6 flex items-center gap-2.5">
+        <span className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-650 flex items-center justify-center text-sm shadow-sm">
+          📝
+        </span>
         Submit a Help Request
       </h2>
 
       {errorMsg && (
-        <div className="mb-6 p-4 rounded-xl bg-red-550/5 border border-red-500/20 text-red-700 text-sm">
-          ⚠️ <strong>Error:</strong> {errorMsg}
+        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-2.5 shadow-sm">
+          <AlertTriangle size={18} className="text-red-500 shrink-0 mt-0.5" />
+          <div>
+            <strong>Submission Error:</strong> {errorMsg}
+          </div>
         </div>
       )}
 
       {successMsg && (
-        <div className="mb-6 p-4 rounded-xl bg-nature-sageLight border border-nature-sage/40 text-nature-primary text-sm flex items-center gap-2">
-          <CheckCircle size={16} className="text-nature-leaf" />
+        <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center gap-2.5 shadow-sm">
+          <CheckCircle size={18} className="text-emerald-600 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
@@ -155,7 +160,7 @@ export default function SubmitRequestForm({ onSubmittingStateChange }) {
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Description */}
         <div>
-          <label htmlFor="description" className="block text-xs font-bold text-nature-text uppercase tracking-wider mb-2">
+          <label htmlFor="description" className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
             Describe the need
           </label>
           <textarea
@@ -163,18 +168,18 @@ export default function SubmitRequestForm({ onSubmittingStateChange }) {
             rows={4}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full rounded-xl border border-nature-borderSage bg-nature-bg/30 text-nature-text p-3 text-sm focus:outline-none focus:border-nature-sage focus:ring-4 focus:ring-nature-sageLight/50 placeholder-nature-textMuted/50 transition-all resize-none"
+            className="w-full rounded-xl glass-input p-3.5 text-sm placeholder-slate-400 resize-none"
             placeholder="e.g. An elderly man in our building has run out of insulin and cannot reach a hospital..."
             required
           />
-          <span className="block text-[11px] text-nature-textMuted mt-1.5 leading-normal">
+          <span className="block text-[11px] text-slate-500 mt-1.5 leading-normal">
             Be as descriptive as possible — Gemini AI uses this to analyze category and grade urgency.
           </span>
         </div>
 
         {/* Contact Phone */}
         <div>
-          <label htmlFor="victimPhone" className="block text-xs font-bold text-nature-text uppercase tracking-wider mb-2">
+          <label htmlFor="victimPhone" className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
             Your Contact Number
           </label>
           <input
@@ -182,11 +187,11 @@ export default function SubmitRequestForm({ onSubmittingStateChange }) {
             id="victimPhone"
             value={victimPhone}
             onChange={(e) => setVictimPhone(e.target.value)}
-            className="w-full rounded-xl border border-nature-borderSage bg-nature-bg/30 text-nature-text p-3 text-sm focus:outline-none focus:border-nature-sage focus:ring-4 focus:ring-nature-sageLight/50 placeholder-nature-textMuted/50 transition-all"
+            className="w-full rounded-xl glass-input p-3.5 text-sm placeholder-slate-400"
             placeholder="e.g. +91 98765 43210"
             required
           />
-          <span className="block text-[11px] text-nature-textMuted mt-1.5 leading-normal">
+          <span className="block text-[11px] text-slate-500 mt-1.5 leading-normal">
             Coordinators and matched volunteers will call you at this number.
           </span>
         </div>
@@ -194,7 +199,7 @@ export default function SubmitRequestForm({ onSubmittingStateChange }) {
         {/* Address */}
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label htmlFor="address" className="text-xs font-bold text-nature-text uppercase tracking-wider">
+            <label htmlFor="address" className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">
               Exact Address / Landmark (Optional)
             </label>
             <button
@@ -203,18 +208,18 @@ export default function SubmitRequestForm({ onSubmittingStateChange }) {
               disabled={gpsLoading}
               className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold border transition-all ${
                 gpsSuccess
-                  ? 'bg-nature-sageLight text-nature-primary border-nature-sage/40'
-                  : 'bg-white hover:bg-nature-sageLight/30 text-nature-leaf border-nature-borderSage hover:border-nature-sage'
+                  ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/35 shadow-sm'
+                  : 'bg-slate-50 hover:bg-emerald-50 text-emerald-600 border-slate-200 hover:border-emerald-300'
               }`}
             >
               {gpsLoading ? (
                 <>
-                  <Loader2 size={12} className="animate-spin" />
+                  <Loader2 size={12} className="animate-spin text-emerald-600" />
                   Locating...
                 </>
               ) : gpsSuccess ? (
                 <>
-                  <CheckCircle size={12} className="text-nature-leaf" />
+                  <CheckCircle size={12} className="text-emerald-600" />
                   Shared
                 </>
               ) : (
@@ -230,21 +235,21 @@ export default function SubmitRequestForm({ onSubmittingStateChange }) {
             rows={2}
             value={address}
             onChange={(e) => setAddress(e.target.value)}
-            className="w-full rounded-xl border border-nature-borderSage bg-nature-bg/30 text-nature-text p-3 text-sm focus:outline-none focus:border-nature-sage focus:ring-4 focus:ring-nature-sageLight/50 placeholder-nature-textMuted/50 transition-all resize-none"
+            className="w-full rounded-xl glass-input p-3.5 text-sm placeholder-slate-400 resize-none"
             placeholder="e.g. Flat 202, Building B, Tarmale Nagar, Vasind, Maharashtra (Or click Share GPS)"
           />
         </div>
 
         {/* Local Hub / Zone */}
         <div>
-          <label htmlFor="zone" className="block text-xs font-bold text-nature-text uppercase tracking-wider mb-2">
+          <label htmlFor="zone" className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-2">
             Select Nearest Locality/Hub
           </label>
           <select
             id="zone"
             value={zone}
             onChange={(e) => setZone(e.target.value)}
-            className="w-full rounded-xl border border-nature-borderSage bg-nature-bg/30 text-nature-text p-3 text-sm focus:outline-none focus:border-nature-sage focus:ring-4 focus:ring-nature-sageLight/50 transition-all cursor-pointer"
+            className="w-full rounded-xl glass-input p-3.5 text-sm cursor-pointer"
             required
           >
             <option value="" disabled>Select nearest locality...</option>
@@ -259,16 +264,16 @@ export default function SubmitRequestForm({ onSubmittingStateChange }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 py-3 px-6 rounded-xl font-bold bg-nature-primary hover:bg-nature-primaryHover text-white shadow-nature transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
+          className="w-full flex items-center justify-center gap-2.5 py-3.5 px-6 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-[0_4px_15px_rgba(16,185,129,0.15)] hover:shadow-[0_4px_25px_rgba(16,185,129,0.35)] transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
         >
           {loading ? (
             <>
-              <Loader2 size={16} className="animate-spin" />
+              <Loader2 size={16} className="animate-spin text-white" />
               AI Analyzing Emergency...
             </>
           ) : (
             <>
-              <Send size={16} />
+              <Send size={15} />
               Submit Help Request
             </>
           )}

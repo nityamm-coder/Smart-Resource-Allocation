@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Loader2, Cpu, User, ShieldCheck } from 'lucide-react';
+import { Search, Loader2, Cpu, User, ShieldCheck, Terminal } from 'lucide-react';
 
 export default function MatchmakingVisualizer({ isSubmitting }) {
   const [trackId, setTrackId] = useState('');
@@ -19,7 +19,6 @@ export default function MatchmakingVisualizer({ isSubmitting }) {
         { type: 'success', text: 'Grid connection established. Dispatching payload...' }
       ]);
     } else {
-      // Default logs
       const timer = setTimeout(() => {
         setTerminalLogs([
           { type: 'info', text: 'Connecting to geographic grid...' },
@@ -41,9 +40,9 @@ export default function MatchmakingVisualizer({ isSubmitting }) {
   return (
     <div className="flex flex-col h-full gap-5">
       {/* Search / Track Box */}
-      <div className="bg-white border border-nature-borderSage rounded-2xl p-5 shadow-nature">
-        <h3 className="font-display font-bold text-base text-nature-text mb-3 flex items-center gap-2">
-          <Search size={16} className="text-nature-leaf" />
+      <div className="glass-card rounded-3xl p-5 shadow-sm">
+        <h3 className="font-display font-extrabold text-sm text-slate-800 mb-4 flex items-center gap-2">
+          <Search size={15} className="text-emerald-600" />
           Track Existing Request
         </h3>
         <form onSubmit={handleTrackSubmit} className="flex gap-2">
@@ -52,12 +51,12 @@ export default function MatchmakingVisualizer({ isSubmitting }) {
             placeholder="Enter Request ID..."
             value={trackId}
             onChange={(e) => setTrackId(e.target.value)}
-            className="flex-grow rounded-xl border border-nature-borderSage bg-nature-bg/30 text-nature-text px-4 py-2 text-sm focus:outline-none focus:border-nature-sage focus:ring-4 focus:ring-nature-sageLight/50 placeholder-nature-textMuted/50 transition-all"
+            className="flex-grow rounded-xl glass-input px-4 py-2 text-sm placeholder-slate-405"
             required
           />
           <button
             type="submit"
-            className="px-4 py-2 rounded-xl font-bold bg-nature-sage hover:bg-nature-sage/95 text-white hover:shadow-nature-sm text-sm transition-all flex items-center gap-1.5"
+            className="px-4 py-2 rounded-xl font-bold bg-emerald-500 hover:bg-emerald-650 text-white hover:shadow-sm text-sm transition-all duration-300 flex items-center gap-1.5 shrink-0"
           >
             Track
           </button>
@@ -65,73 +64,120 @@ export default function MatchmakingVisualizer({ isSubmitting }) {
       </div>
 
       {/* Radar Sweep & Connection Visualizer */}
-      <div className="flex-grow bg-white border border-nature-borderSage rounded-2xl p-6 shadow-nature flex flex-col justify-between relative overflow-hidden min-h-[420px]">
+      <div className="flex-grow glass-card rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden min-h-[420px]">
+        
         {/* Soft Radar Sweep Overlay */}
-        <div className="absolute inset-0 pointer-events-none opacity-[0.03] flex items-center justify-center">
-          <div className="w-[300px] h-[300px] rounded-full border border-nature-primary relative animate-radar-sweep origin-center">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-[150px] bg-gradient-to-t from-transparent to-nature-primary origin-bottom" style={{ transform: 'rotate(180deg)' }} />
+        <div className="absolute inset-0 pointer-events-none opacity-[0.08] flex items-center justify-center">
+          <div className="w-[300px] h-[300px] rounded-full border border-emerald-600 relative animate-radar-sweep origin-center">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-4 h-[150px] bg-gradient-to-t from-transparent to-emerald-600 origin-bottom" style={{ transform: 'rotate(180deg)' }} />
           </div>
-          <div className="absolute w-[200px] h-[200px] rounded-full border border-nature-primary/40" />
-          <div className="absolute w-[100px] h-[100px] rounded-full border border-nature-primary/20" />
+          <div className="absolute w-[200px] h-[200px] rounded-full border border-emerald-600/40" />
+          <div className="absolute w-[100px] h-[100px] rounded-full border border-emerald-600/20" />
+          {/* Radar grid coordinates */}
+          <div className="absolute w-[300px] h-[1px] bg-emerald-600/20" />
+          <div className="absolute h-[300px] w-[1px] bg-emerald-600/20" />
+        </div>
+
+        {/* Pulse nodes on the radar */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div className="absolute top-1/4 left-1/3 w-2 h-2 bg-emerald-600 rounded-full animate-ping-slow" />
+          <div className="absolute top-1/3 left-1/4 w-1.5 h-1.5 bg-emerald-600 rounded-full" />
+          <span className="absolute top-[35%] left-[27%] text-[7px] text-slate-400 font-bold uppercase tracking-widest">Priya</span>
+
+          <div className="absolute bottom-1/4 right-1/3 w-2 h-2 bg-teal-600 rounded-full animate-ping-slow" />
+          <div className="absolute bottom-1/3 right-1/4 w-1.5 h-1.5 bg-teal-600 rounded-full" />
+          <span className="absolute bottom-[35%] right-[27%] text-[7px] text-slate-400 font-bold uppercase tracking-widest">Rohan</span>
         </div>
 
         {/* Top Header */}
-        <div className="text-center relative z-10 space-y-2 mt-4">
-          <div className="w-14 h-14 rounded-full bg-nature-sageLight/60 text-nature-primary flex items-center justify-center mx-auto mb-2 border border-nature-borderSage shadow-nature-sm">
-            <Cpu size={24} className={isSubmitting ? 'animate-spin' : ''} />
+        <div className="text-center relative z-10 space-y-1.5 mt-2">
+          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 flex items-center justify-center mx-auto mb-2 shadow-sm">
+            <Cpu size={22} className={isSubmitting ? 'animate-spin text-emerald-600' : 'text-emerald-600'} />
           </div>
-          <h3 className="font-display font-bold text-lg text-nature-text">AI Matchmaking Dispatch</h3>
-          <p className="text-xs text-nature-textMuted max-w-xs mx-auto">
+          <h3 className="font-display font-extrabold text-base text-slate-800">AI Matchmaking Dispatch</h3>
+          <p className="text-xs text-slate-500 max-w-xs mx-auto">
             Our AI analyses the request context in real-time, grades emergency status, and routes it to nearby volunteers.
           </p>
         </div>
 
-        {/* Nodes Connection Graph */}
-        <div className="flex items-center justify-center gap-2 md:gap-4 my-6 relative z-10">
-          <div className="w-12 h-12 rounded-full border border-nature-borderSage bg-nature-bg flex items-center justify-center text-nature-text shadow-nature-sm">
-            <User size={20} />
-          </div>
-          
-          <div className="flex items-center flex-grow max-w-[80px] justify-between">
-            <div className="w-1.5 h-1.5 rounded-full bg-nature-sage animate-ping" />
-            <div className="h-0.5 bg-nature-borderSage flex-grow" />
-            <div className="w-1.5 h-1.5 rounded-full bg-nature-sage" />
-          </div>
+        {/* SVG Nodes Connection Graph */}
+        <div className="my-6 relative z-10 flex items-center justify-center">
+          <svg className="w-full max-w-[280px] h-16" viewBox="0 0 280 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Connection path: User -> AI */}
+            <path
+              d="M 32 32 L 140 32"
+              stroke={isSubmitting ? "#059669" : "rgba(45,90,39,0.12)"}
+              strokeWidth="2"
+              className={isSubmitting ? "animate-dash-line" : ""}
+            />
+            {/* Connection path: AI -> Volunteer */}
+            <path
+              d="M 140 32 L 248 32"
+              stroke={isSubmitting ? "#059669" : "rgba(45,90,39,0.12)"}
+              strokeWidth="2"
+              className={isSubmitting ? "animate-dash-line" : ""}
+            />
 
-          <div className="w-14 h-14 rounded-full border-2 border-nature-sage bg-nature-sageLight flex items-center justify-center text-nature-primary shadow-nature">
-            🌱
-          </div>
+            {/* Node 1: Victim */}
+            <g transform="translate(12, 12)">
+              <circle cx="20" cy="20" r="19" fill="#ffffff" stroke="rgba(45,90,39,0.15)" strokeWidth="2" />
+              <foreignObject x="8" y="8" width="24" height="24">
+                <div className="w-full h-full flex items-center justify-center text-slate-500">
+                  <User size={14} />
+                </div>
+              </foreignObject>
+            </g>
 
-          <div className="flex items-center flex-grow max-w-[80px] justify-between">
-            <div className="w-1.5 h-1.5 rounded-full bg-nature-sage" />
-            <div className="h-0.5 bg-nature-borderSage flex-grow" />
-            <div className="w-1.5 h-1.5 rounded-full bg-nature-leaf animate-pulse" />
-          </div>
+            {/* Node 2: AI Processor */}
+            <g transform="translate(120, 12)">
+              <circle cx="20" cy="20" r="20" fill={isSubmitting ? "rgba(16, 185, 129, 0.1)" : "#ffffff"} stroke={isSubmitting ? "#10B981" : "rgba(45,90,39,0.2)"} strokeWidth="2" className={isSubmitting ? "glow-ring animate-pulse" : ""} />
+              <foreignObject x="10" y="10" width="20" height="20">
+                <div className="w-full h-full flex items-center justify-center text-xl">
+                  🌱
+                </div>
+              </foreignObject>
+            </g>
 
-          <div className="w-12 h-12 rounded-full border-2 border-nature-leaf bg-nature-sageLight flex items-center justify-center text-nature-leaf shadow-nature-sm">
-            <ShieldCheck size={20} />
-          </div>
+            {/* Node 3: Volunteer */}
+            <g transform="translate(228, 12)">
+              <circle cx="20" cy="20" r="19" fill="#ffffff" stroke={isSubmitting ? "#10B981" : "rgba(45,90,39,0.15)"} strokeWidth="2" />
+              <foreignObject x="8" y="8" width="24" height="24">
+                <div className={isSubmitting ? "w-full h-full flex items-center justify-center text-emerald-600" : "w-full h-full flex items-center justify-center text-slate-500"}>
+                  <ShieldCheck size={15} />
+                </div>
+              </foreignObject>
+            </g>
+          </svg>
         </div>
 
         {/* Terminal Logger Console */}
-        <div className="bg-nature-bg/85 border border-nature-borderSage/60 rounded-xl p-4 text-left relative z-10 font-mono">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-nature-leaf opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-nature-leaf"></span>
-            </span>
-            <span className="text-[10px] font-bold text-nature-leaf uppercase tracking-wider">System Log Console</span>
+        <div className="bg-[#080E0B] border border-emerald-950/20 rounded-2xl p-4 text-left relative z-10 font-mono shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
+          <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-white/5">
+            <Terminal size={12} className="text-emerald-400 animate-pulse" />
+            <span className="text-[10px] font-bold text-emerald-400 uppercase tracking-widest">System Log Console</span>
           </div>
           
-          <div className="space-y-1 text-[11px] text-nature-text">
+          <div className="space-y-1 text-[11px] h-[72px] overflow-y-auto scrollbar-thin">
             {terminalLogs.map((log, index) => (
-              <div key={index} className="flex gap-1.5 items-start">
-                <span className="text-nature-sage font-bold">&gt;</span>
-                <span className={log.type === 'error' ? 'text-red-600' : log.type === 'warning' ? 'text-amber-600' : log.type === 'success' ? 'text-nature-primary font-bold' : 'text-nature-textMuted'}>
+              <div key={index} className="flex gap-1.5 items-start leading-normal">
+                <span className="text-emerald-500 font-bold shrink-0">&gt;</span>
+                <span className={
+                  log.type === 'error' 
+                    ? 'text-red-400' 
+                    : log.type === 'warning' 
+                    ? 'text-amber-400' 
+                    : log.type === 'success' 
+                    ? 'text-emerald-400 font-semibold text-neon-green' 
+                    : 'text-slate-400'
+                }>
                   {log.text}
                 </span>
               </div>
             ))}
+            <div className="flex items-center gap-0.5">
+              <span className="text-emerald-500 font-bold shrink-0">&gt;</span>
+              <span className="w-1.5 h-3 bg-emerald-400 typewriter-cursor"></span>
+            </div>
           </div>
         </div>
 
@@ -139,7 +185,7 @@ export default function MatchmakingVisualizer({ isSubmitting }) {
         <div className="mt-4 text-center">
           <a
             href="tracking.html"
-            className="inline-flex items-center gap-1.5 text-xs font-bold text-nature-leaf hover:text-nature-primary underline transition-all"
+            className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 hover:text-emerald-500 transition-all hover:underline"
           >
             Go to Dedicated Tracking Portal →
           </a>
