@@ -2214,8 +2214,8 @@ footer {
   flex: 1;
   overflow-y: auto;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(15, 23, 42, 0.2);
+  border: 1px solid rgba(45, 154, 78, 0.16);
+  background: rgba(240, 253, 244, 0.92);
 }
 
 .logs-table {
@@ -2227,14 +2227,15 @@ footer {
 .logs-table td {
   padding: 1rem;
   text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(45, 154, 78, 0.12);
   font-size: 0.9rem;
+  color: #1b4332;
 }
 
 .logs-table th {
-  background: rgba(15, 23, 42, 0.4);
+  background: rgba(240, 253, 244, 0.95);
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.8);
+  color: #276749;
   position: sticky;
   top: 0;
   z-index: 10;
@@ -2245,7 +2246,7 @@ footer {
 }
 
 .logs-table tr:hover {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: rgba(45, 154, 78, 0.05);
 }
 
 .logs-table tr.clickable {
