@@ -21,414 +21,427 @@
     />
     <!-- Leaflet.js CSS for Map View -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Our custom styles -->
     <link rel="stylesheet" href="style.css" />
   </head>
 
   <body>
-    <!-- ── Navigation Bar ────────────────────────────────────── -->
-    <nav class="navbar navbar-expand-lg navbar-dark" style="background:#1e1b4b;">
-      <div class="container-fluid">
-        <a class="navbar-brand" href="index.html">
-          <i class="bi bi-heart-pulse-fill me-2 text-danger"></i>
-          Smart Resource Allocation
+    <!-- Hidden original triggers for app.js compat -->
+    <div class="d-none">
+      <button id="btn-view-board" class="active">Board</button>
+      <button id="btn-view-map">Map</button>
+      <button id="btn-view-blockchain">Blockchain</button>
+      <button id="view-logs-btn">Logs</button>
+    </div>
+
+    <!-- ── Main Dashboard Layout Container ────────────────────── -->
+    <div class="dashboard-layout-container">
+      
+      <!-- ── Fixed Sidebar Left ───────────────────────────────── -->
+      <aside class="sidebar-container">
+        <!-- Logo -->
+        <a class="sidebar-logo" href="index.html">
+          <span>🌱</span>
+          <h2>Smart Resource<br><span style="font-size:0.72rem; color:#84a98c; font-weight:700;">Allocation Portal</span></h2>
         </a>
-        <div class="ms-auto d-flex align-items-center gap-2">
-          <!-- Notification Alert Button -->
-          <button id="notification-btn" class="btn btn-outline-warning btn-sm d-none">
-            <i class="bi bi-bell me-1"></i>Enable Alerts
+
+        <!-- User Info -->
+        <div class="sidebar-user">
+          <div class="sidebar-user-avatar">JD</div>
+          <div class="sidebar-user-info">
+            <span class="user-name">John Doe</span>
+            <span class="user-role">NGO Coordinator</span>
+          </div>
+        </div>
+
+        <!-- Navigation Menu -->
+        <nav class="sidebar-menu">
+          <button class="sidebar-item active" id="sb-overview">
+            <i class="bi bi-grid-1x2-fill"></i>Overview
           </button>
-          <!-- Refresh button to reload all requests -->
-          <button id="refresh-btn" class="btn btn-outline-light btn-sm">
-            <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+          <button class="sidebar-item" id="sb-requests">
+            <i class="bi bi-grid-3x3-gap-fill"></i>Requests Board
           </button>
-          <button id="view-logs-btn" class="btn btn-outline-light btn-sm">
-            <i class="bi bi-clock-history me-1"></i>History Logs
+          <button class="sidebar-item" id="sb-map">
+            <i class="bi bi-map-fill"></i>Interactive Map
           </button>
-          <a href="index.html" class="btn btn-light btn-sm">
-            <i class="bi bi-plus-circle me-1"></i>New Request
-          </a>
-        </div>
-      </div>
-    </nav>
+          <button class="sidebar-item" id="sb-blockchain">
+            <i class="bi bi-database-fill-gear"></i>L2 Trust Layer
+          </button>
+          <button class="sidebar-item" id="sb-volunteers">
+            <i class="bi bi-people-fill"></i>Volunteers
+          </button>
+          <button class="sidebar-item" data-bs-toggle="modal" data-bs-target="#restock-modal">
+            <i class="bi bi-box-seam-fill"></i>Restock Supplies
+          </button>
+          <button class="sidebar-item" id="sb-logs">
+            <i class="bi bi-clock-history"></i>History Logs
+          </button>
+        </nav>
+      </aside>
 
-    <!-- ── Dashboard Header ───────────────────────────────────── -->
-    <header class="dashboard-header">
-      <div class="container-fluid">
-        <h1><i class="bi bi-grid-3x3-gap me-2"></i>NGO Coordination Dashboard</h1>
-        <p class="mb-0 opacity-75" style="font-size:0.92rem;">
-          All incoming community needs, ranked by urgency. Assign and update statuses below.
-        </p>
-      </div>
-    </header>
+      <!-- ── Scrollable Content Area Right ────────────────────── -->
+      <main class="main-content-panel">
 
-    <main class="container-fluid px-4">
-
-      <!-- ── Stats Bar ────────────────────────────────────────── -->
-      <div class="row g-3 mb-4" id="stats-bar">
-        <div class="col-6 col-md-3">
-          <div class="stat-card" data-tilt data-tilt-max="10">
-            <div class="stat-number" id="stat-total">—</div>
-            <div class="stat-label">Total Requests</div>
+        <!-- Top Action Bar -->
+        <div class="top-action-bar">
+          <div>
+            <h1 class="fs-4 fw-extrabold mb-1 text-white">NGO Coordination Command Center</h1>
+            <p class="mb-0 text-muted" style="font-size:0.82rem;">Real-time resource allocation and automated AI dispatch portal.</p>
+          </div>
+          <div class="top-action-bar-right">
+            <button id="notification-btn" class="btn btn-outline-warning btn-sm d-none">
+              <i class="bi bi-bell me-1"></i>Enable Alerts
+            </button>
+            <button id="refresh-btn" class="btn btn-outline-light btn-sm">
+              <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+            </button>
+            <a href="index.html" class="btn btn-primary btn-sm">
+              <i class="bi bi-plus-circle me-1"></i>New Request
+            </a>
           </div>
         </div>
-        <div class="col-6 col-md-3">
-          <div class="stat-card" data-tilt data-tilt-max="10">
-            <div class="stat-number text-danger" id="stat-open">—</div>
-            <div class="stat-label">Open</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="stat-card" data-tilt data-tilt-max="10">
-            <div class="stat-number text-warning" id="stat-progress">—</div>
-            <div class="stat-label">In Progress</div>
-          </div>
-        </div>
-        <div class="col-6 col-md-3">
-          <div class="stat-card" data-tilt data-tilt-max="10">
-            <div class="stat-number text-success" id="stat-resolved">—</div>
-            <div class="stat-label">Resolved</div>
-          </div>
-        </div>
-      </div>
 
+        <!-- ── Skeleton Loading State (visible while fetching) ───── -->
+        <div id="loading-state" class="row g-3 mb-4">
+          <div class="col-12 col-lg-4">
+            <div class="skeleton-header"></div>
+            <div class="skeleton-card">
+              <div class="skeleton-line width-40"></div>
+              <div class="skeleton-line width-80"></div>
+              <div class="skeleton-line width-60"></div>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="skeleton-header"></div>
+            <div class="skeleton-card">
+              <div class="skeleton-line width-30"></div>
+              <div class="skeleton-line width-80"></div>
+            </div>
+          </div>
+          <div class="col-12 col-lg-4">
+            <div class="skeleton-header"></div>
+            <div class="skeleton-card">
+              <div class="skeleton-line width-40"></div>
+              <div class="skeleton-line width-90"></div>
+            </div>
+          </div>
+        </div>
 
-      <!-- ── Relief Supply Inventory Panel ────────────────────── -->
-      <div class="row g-3 mb-4" id="inventory-bar">
-        <div class="col-12">
+        <!-- ── Error Message ─────────────────────────────────────── -->
+        <div id="error-state" class="alert alert-danger d-none" role="alert">
+          <i class="bi bi-exclamation-triangle me-2"></i>
+          <span id="error-message"></span>
+        </div>
+
+        <!-- ── OVERVIEW VIEW CONTAINER ─────────────────────────── -->
+        <div id="overview-view-container">
+          
+          <!-- Stats Cards -->
+          <div class="row g-3 mb-4" id="stats-bar">
+            <div class="col-6 col-lg-3">
+              <div class="stat-card" data-tilt data-tilt-max="10">
+                <div class="stat-number" id="stat-total">—</div>
+                <div class="stat-label">Total Requests</div>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3">
+              <div class="stat-card" data-tilt data-tilt-max="10">
+                <div class="stat-number text-danger" id="stat-open">—</div>
+                <div class="stat-label">Open</div>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3">
+              <div class="stat-card" data-tilt data-tilt-max="10">
+                <div class="stat-number text-warning" id="stat-progress">—</div>
+                <div class="stat-label">In Progress</div>
+              </div>
+            </div>
+            <div class="col-6 col-lg-3">
+              <div class="stat-card" data-tilt data-tilt-max="10">
+                <div class="stat-number text-success" id="stat-resolved">—</div>
+                <div class="stat-label">Resolved</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Charts Trend Graphs -->
+          <div class="row g-3 mb-4">
+            <!-- Left Chart -->
+            <div class="col-12 col-lg-7">
+              <div class="chart-container-card">
+                <h4><i class="bi bi-activity text-danger me-2"></i>Emergency Requests Status Trend</h4>
+                <div style="position: relative; height: 280px; width: 100%;">
+                  <canvas id="requestsTrendChart"></canvas>
+                </div>
+              </div>
+            </div>
+            <!-- Right Chart -->
+            <div class="col-12 col-lg-5">
+              <div class="chart-container-card">
+                <h4><i class="bi bi-pie-chart-fill text-primary me-2"></i>Active Needs by Category</h4>
+                <div style="position: relative; height: 280px; width: 100%;">
+                  <canvas id="categoryDistributionChart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Relief Supply Inventory Panel -->
+          <div class="row g-3 mb-4" id="inventory-bar">
+            <div class="col-12">
+              <div class="form-card w-100 m-0 p-4" style="max-width: 100%; background: rgba(30, 41, 59, 0.25); border: 1px solid var(--glass-border);">
+                <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                  <h3 class="fs-5 fw-bold mb-0 text-white d-flex align-items-center">
+                    <i class="bi bi-box-seam-fill me-2 text-primary"></i>Relief Supply Inventory
+                  </h3>
+                  <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#restock-modal">
+                    <i class="bi bi-plus-circle me-1"></i>Restock Supplies
+                  </button>
+                </div>
+                
+                <div class="row g-3">
+                  <div class="col-6 col-md-3">
+                    <div class="p-3 rounded border d-flex justify-content-between align-items-center" id="inv-Food-card" style="background: rgba(15, 23, 42, 0.45) !important;">
+                      <div>
+                        <div class="inventory-label">🍎 FOOD PACKS</div>
+                        <div class="fs-4 fw-extrabold text-white mt-1" id="inv-Food-count">—</div>
+                        <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 2px;" class="text-success d-flex align-items-center"><i class="bi bi-shield-check me-1 text-success"></i>On-Chain: <span id="blockchain-Food-count" class="ms-1 fw-bold">—</span></div>
+                      </div>
+                      <i class="bi bi-apple fs-3 text-success"></i>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <div class="p-3 rounded border d-flex justify-content-between align-items-center" id="inv-Medical-card" style="background: rgba(15, 23, 42, 0.45) !important;">
+                      <div>
+                        <div class="inventory-label">🏥 MEDICAL KITS</div>
+                        <div class="fs-4 fw-extrabold text-white mt-1" id="inv-Medical-count">—</div>
+                        <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 2px;" class="text-info d-flex align-items-center"><i class="bi bi-shield-check me-1 text-info"></i>On-Chain: <span id="blockchain-Medical-count" class="ms-1 fw-bold">—</span></div>
+                      </div>
+                      <i class="bi bi-hospital fs-3 text-info"></i>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <div class="p-3 rounded border d-flex justify-content-between align-items-center" id="inv-Shelter-card" style="background: rgba(15, 23, 42, 0.45) !important;">
+                      <div>
+                        <div class="inventory-label">🏠 SHELTER KITS</div>
+                        <div class="fs-4 fw-extrabold text-white mt-1" id="inv-Shelter-count">—</div>
+                        <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 2px;" class="text-warning d-flex align-items-center"><i class="bi bi-shield-check me-1 text-warning"></i>On-Chain: <span id="blockchain-Shelter-count" class="ms-1 fw-bold">—</span></div>
+                      </div>
+                      <i class="bi bi-house-door fs-3 text-warning"></i>
+                    </div>
+                  </div>
+                  <div class="col-6 col-md-3">
+                    <div class="p-3 rounded border d-flex justify-content-between align-items-center" id="inv-Other-card" style="background: rgba(15, 23, 42, 0.45) !important;">
+                      <div>
+                        <div class="inventory-label">ℹ️ OTHER SUPPLIES</div>
+                        <div class="fs-4 fw-extrabold text-white mt-1" id="inv-Other-count">—</div>
+                        <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 2px;" class="text-secondary d-flex align-items-center"><i class="bi bi-shield-check me-1 text-secondary"></i>On-Chain: <span id="blockchain-Other-count" class="ms-1 fw-bold">—</span></div>
+                      </div>
+                      <i class="bi bi-info-circle fs-3 text-secondary"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /overview-view-container -->
+
+        <!-- ── VOLUNTEERS VIEW CONTAINER ───────────────────────── -->
+        <div id="volunteers-view-container" class="d-none mb-4">
           <div class="form-card w-100 m-0 p-4" style="max-width: 100%; background: rgba(30, 41, 59, 0.25); border: 1px solid var(--glass-border);">
-            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-              <h3 class="fs-5 fw-bold mb-0 text-white d-flex align-items-center">
-                <i class="bi bi-box-seam-fill me-2 text-primary"></i>Relief Supply Inventory
-              </h3>
-              <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#restock-modal">
-                <i class="bi bi-plus-circle me-1"></i>Restock Supplies
+            <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+              <div>
+                <h3 class="fs-5 fw-bold mb-1 text-white d-flex align-items-center">
+                  <i class="bi bi-people-fill me-2 text-primary"></i>Volunteer Directory
+                </h3>
+                <p class="mb-0 text-muted" style="font-size:0.82rem;">Manage active relief workers, check location assignments, skill specialties, and feedback scores.</p>
+              </div>
+              <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#add-volunteer-modal">
+                <i class="bi bi-person-plus-fill me-1"></i>Add New Volunteer
               </button>
             </div>
-            
-            <div class="row g-3">
-              <div class="col-6 col-md-3">
-                <div class="p-3 rounded bg-dark-subtle border border-secondary d-flex justify-content-between align-items-center" id="inv-Food-card" style="background: rgba(15, 23, 42, 0.45) !important;">
-                  <div>
-                    <div class="inventory-label">🍎 FOOD PACKS</div>
-                    <div class="fs-4 fw-extrabold text-white mt-1" id="inv-Food-count">—</div>
-                    <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 2px;" class="text-success d-flex align-items-center"><i class="bi bi-shield-check me-1 text-success"></i>On-Chain: <span id="blockchain-Food-count" class="ms-1 fw-bold">—</span></div>
+
+            <!-- Search and Filter Roster -->
+            <div class="mb-4" style="max-width: 480px;">
+              <div class="input-group">
+                <span class="input-group-text bg-dark border-secondary text-muted" style="border-right: none; background: rgba(15, 23, 42, 0.6) !important;"><i class="bi bi-search"></i></span>
+                <input type="text" id="volunteer-search" class="form-control border-secondary text-white" style="background: rgba(15, 23, 42, 0.6); border-left: none; height: 42px;" placeholder="Filter by volunteer name, location, or skills..." />
+              </div>
+            </div>
+
+            <!-- Roster list grid container -->
+            <div id="volunteers-list">
+              <!-- Roster cards injected dynamically by app.js -->
+            </div>
+          </div>
+        </div>
+
+        <!-- ── KANBAN BOARD CONTAINER ──────────────────────────── -->
+        <div class="d-none mb-4" id="kanban-board-wrapper">
+          <!-- Filter and Search Bar -->
+          <div class="filter-card w-100 mb-4">
+            <div class="d-flex align-items-center gap-2 flex-grow-1">
+              <i class="bi bi-search text-muted"></i>
+              <input type="text" id="search-filter" class="filter-input" placeholder="Search requests by description, address, or phone..." />
+            </div>
+            <div class="btn-filter-group" id="category-filter-group">
+              <button class="btn-filter active" data-category="All">All</button>
+              <button class="btn-filter" data-category="Medical">🏥 Medical</button>
+              <button class="btn-filter" data-category="Food">🍎 Food</button>
+              <button class="btn-filter" data-category="Shelter">🏠 Shelter</button>
+              <button class="btn-filter" data-category="Other">ℹ️ Other</button>
+            </div>
+          </div>
+
+          <!-- Main Kanban grid -->
+          <div class="row g-3" id="kanban-board">
+            <div class="col-12">
+              <div class="row g-3">
+                <!-- OPEN Column -->
+                <div class="col-12 col-lg-4">
+                  <div class="kanban-column-header open">
+                    <i class="bi bi-circle"></i>
+                    Open
+                    <span class="ms-auto badge" style="background:#a64ff1;" id="count-open">0</span>
                   </div>
-                  <i class="bi bi-apple fs-3 text-success"></i>
-                </div>
-              </div>
-              <div class="col-6 col-md-3">
-                <div class="p-3 rounded bg-dark-subtle border border-secondary d-flex justify-content-between align-items-center" id="inv-Medical-card" style="background: rgba(15, 23, 42, 0.45) !important;">
-                  <div>
-                    <div class="inventory-label">🏥 MEDICAL KITS</div>
-                    <div class="fs-4 fw-extrabold text-white mt-1" id="inv-Medical-count">—</div>
-                    <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 2px;" class="text-info d-flex align-items-center"><i class="bi bi-shield-check me-1 text-info"></i>On-Chain: <span id="blockchain-Medical-count" class="ms-1 fw-bold">—</span></div>
+                  <div id="col-open">
+                    <!-- Request cards injected here -->
                   </div>
-                  <i class="bi bi-hospital fs-3 text-info"></i>
                 </div>
-              </div>
-              <div class="col-6 col-md-3">
-                <div class="p-3 rounded bg-dark-subtle border border-secondary d-flex justify-content-between align-items-center" id="inv-Shelter-card" style="background: rgba(15, 23, 42, 0.45) !important;">
-                  <div>
-                    <div class="inventory-label">🏠 SHELTER KITS</div>
-                    <div class="fs-4 fw-extrabold text-white mt-1" id="inv-Shelter-count">—</div>
-                    <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 2px;" class="text-warning d-flex align-items-center"><i class="bi bi-shield-check me-1 text-warning"></i>On-Chain: <span id="blockchain-Shelter-count" class="ms-1 fw-bold">—</span></div>
+
+                <!-- IN PROGRESS Column -->
+                <div class="col-12 col-lg-4">
+                  <div class="kanban-column-header progress">
+                    <i class="bi bi-arrow-repeat"></i>
+                    In Progress
+                    <span class="ms-auto badge bg-warning text-dark" id="count-progress">0</span>
                   </div>
-                  <i class="bi bi-house-door fs-3 text-warning"></i>
-                </div>
-              </div>
-              <div class="col-6 col-md-3">
-                <div class="p-3 rounded bg-dark-subtle border border-secondary d-flex justify-content-between align-items-center" id="inv-Other-card" style="background: rgba(15, 23, 42, 0.45) !important;">
-                  <div>
-                    <div class="inventory-label">ℹ️ OTHER SUPPLIES</div>
-                    <div class="fs-4 fw-extrabold text-white mt-1" id="inv-Other-count">—</div>
-                    <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 2px;" class="text-secondary d-flex align-items-center"><i class="bi bi-shield-check me-1 text-secondary"></i>On-Chain: <span id="blockchain-Other-count" class="ms-1 fw-bold">—</span></div>
+                  <div id="col-progress">
+                    <!-- Request cards injected here -->
                   </div>
-                  <i class="bi bi-info-circle fs-3 text-secondary"></i>
+                </div>
+
+                <!-- RESOLVED Column -->
+                <div class="col-12 col-lg-4">
+                  <div class="kanban-column-header resolved d-flex align-items-center">
+                    <i class="bi bi-check-circle"></i>
+                    <span class="me-2">Resolved</span>
+                    <span class="badge bg-success me-auto" id="count-resolved">0</span>
+                    <button id="clear-resolved-btn" class="btn btn-outline-danger btn-sm py-0 px-2 border-0" style="font-size:0.75rem; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3) !important; color: #fca5a5; display: none;" title="Delete all resolved requests from database">
+                      <i class="bi bi-trash-fill me-1"></i>Clear All
+                    </button>
+                  </div>
+                  <div id="col-resolved">
+                    <!-- Request cards injected here -->
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- ── Filter Bar ───────────────────────────────────────── -->
-      <div class="filter-card">
-        <div class="d-flex align-items-center gap-2 flex-grow-1">
-          <i class="bi bi-search text-muted"></i>
-          <input type="text" id="search-filter" class="filter-input" placeholder="Search requests by description, address, or phone..." />
-        </div>
-        <div class="btn-filter-group" id="category-filter-group">
-          <button class="btn-filter active" data-category="All">All</button>
-          <button class="btn-filter" data-category="Medical">🏥 Medical</button>
-          <button class="btn-filter" data-category="Food">🍎 Food</button>
-          <button class="btn-filter" data-category="Shelter">🏠 Shelter</button>
-          <button class="btn-filter" data-category="Other">ℹ️ Other</button>
-        </div>
-        
-        <!-- View Toggle (Board vs Map vs Blockchain) -->
-        <div class="view-toggle-group ms-md-3 d-flex align-items-center gap-1 border-start border-secondary ps-md-3">
-          <button id="btn-view-board" class="btn-toggle active" title="Switch to Kanban Board View">
-            <i class="bi bi-grid-3x3-gap-fill me-1"></i>Board
-          </button>
-          <button id="btn-view-map" class="btn-toggle" title="Switch to Interactive Map View">
-            <i class="bi bi-map-fill me-1"></i>Map
-          </button>
-          <button id="btn-view-blockchain" class="btn-toggle" title="Switch to L2 Blockchain Trust Explorer">
-            <i class="bi bi-database-fill-gear me-1"></i>L2 Trust Layer
-          </button>
-        </div>
-      </div>
-
-      <!-- ── Skeleton Loading State (visible while fetching) ───── -->
-      <div id="loading-state" class="row g-3 mb-4">
-        <!-- 3 Columns of Skeleton Cards -->
-        <div class="col-12 col-lg-3">
-          <div class="skeleton-header"></div>
-          <div class="skeleton-card">
-            <div class="skeleton-line width-40"></div>
-            <div class="skeleton-line width-80"></div>
-            <div class="skeleton-line width-60"></div>
-            <div class="skeleton-line width-90"></div>
-          </div>
-          <div class="skeleton-card">
-            <div class="skeleton-line width-40"></div>
-            <div class="skeleton-line width-70"></div>
-            <div class="skeleton-line width-50"></div>
-          </div>
-        </div>
-        <div class="col-12 col-lg-3">
-          <div class="skeleton-header"></div>
-          <div class="skeleton-card">
-            <div class="skeleton-line width-30"></div>
-            <div class="skeleton-line width-80"></div>
-            <div class="skeleton-line width-50"></div>
-          </div>
-        </div>
-        <div class="col-12 col-lg-3">
-          <div class="skeleton-header"></div>
-          <div class="skeleton-card">
-            <div class="skeleton-line width-40"></div>
-            <div class="skeleton-line width-90"></div>
-            <div class="skeleton-line width-60"></div>
-          </div>
-        </div>
-        <div class="col-12 col-lg-3">
-          <div class="skeleton-header"></div>
-          <div class="skeleton-card">
-            <div class="skeleton-line width-50"></div>
-            <div class="skeleton-line width-70"></div>
-            <div class="skeleton-line width-60"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── Error Message ─────────────────────────────────────── -->
-      <div id="error-state" class="alert alert-danger d-none" role="alert">
-        <i class="bi bi-exclamation-triangle me-2"></i>
-        <span id="error-message"></span>
-      </div>
-
-      <!-- ── Map View Container ─────────────────────────────────── -->
-      <div id="map-view-container" class="d-none mb-4">
-        <div id="map-element"></div>
-      </div>
-
-      <!-- ── L2 EVM Blockchain Explorer Container ────────────────── -->
-      <div id="blockchain-view-container" class="d-none mb-4">
-        <!-- Stats Banner -->
-        <div class="row g-3 mb-4">
-          <div class="col-md-3 col-6">
-            <div class="p-3 rounded d-flex align-items-center justify-content-between" style="background: rgba(30, 41, 59, 0.25); border: 1px solid var(--glass-border);">
-              <div>
-                <span class="d-block text-muted small" style="font-size:0.75rem;">L2 Network Status</span>
-                <span class="fw-bold text-white d-flex align-items-center gap-1 mt-1" style="font-size:0.88rem;">
-                  <span class="status-dot available" style="width: 8px; height: 8px;"></span>
-                  <span id="blockchain-net-name">Arbitrum Sepolia</span>
-                </span>
-              </div>
-              <i class="bi bi-cpu-fill fs-3 text-info"></i>
-            </div>
-          </div>
-          <div class="col-md-3 col-6">
-            <div class="p-3 rounded d-flex align-items-center justify-content-between" style="background: rgba(30, 41, 59, 0.25); border: 1px solid var(--glass-border);">
-              <div>
-                <span class="d-block text-muted small" style="font-size:0.75rem;">Block Height</span>
-                <span class="fs-5 fw-bold text-white mt-1 d-block" id="blockchain-block-height">0</span>
-              </div>
-              <i class="bi bi-database-fill fs-3 text-primary"></i>
-            </div>
-          </div>
-          <div class="col-md-3 col-6">
-            <div class="p-3 rounded d-flex align-items-center justify-content-between" style="background: rgba(30, 41, 59, 0.25); border: 1px solid var(--glass-border);">
-              <div>
-                <span class="d-block text-muted small" style="font-size:0.75rem;">Total Minted SBTs</span>
-                <span class="fs-5 fw-bold text-white mt-1 d-block" id="blockchain-total-sbts">0</span>
-              </div>
-              <i class="bi bi-award-fill fs-3 text-warning"></i>
-            </div>
-          </div>
-          <div class="col-md-3 col-6">
-            <div class="p-3 rounded d-flex align-items-center justify-content-between" style="background: rgba(30, 41, 59, 0.25); border: 1px solid var(--glass-border);">
-              <div>
-                <span class="d-block text-muted small" style="font-size:0.75rem;">Smart Contract Address</span>
-                <span class="fw-bold mt-1 text-white-50 d-block user-select-all" id="blockchain-contract-addr" style="font-size:0.78rem;">0x7a43f891F891F891F891F891F891F891F891F891</span>
-              </div>
-              <i class="bi bi-file-earmark-code-fill fs-3 text-success"></i>
-            </div>
+        <!-- ── MAP VIEW CONTAINER ─────────────────────────────────── -->
+        <div id="map-view-container" class="d-none mb-4">
+          <div class="chart-container-card w-100 p-0 overflow-hidden" style="height:550px;">
+            <div id="map-element" style="height: 100%; width: 100%;"></div>
           </div>
         </div>
 
-        <div class="row g-3">
-          <!-- Column 1: L2 Ledger Blocks & Transactions -->
-          <div class="col-12 col-xl-7">
-            <div class="form-card w-100 m-0 p-4" style="max-width: 100%; background: rgba(30, 41, 59, 0.25); border: 1px solid var(--glass-border);">
-              <h3 class="fs-5 fw-bold mb-3 text-white"><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>L2 EVM Ledger Explorer</h3>
-              <div class="logs-table-wrapper" style="max-height: 480px; overflow-y: auto;">
-                <table class="logs-table mb-0">
-                  <thead>
-                    <tr>
-                      <th>Block #</th>
-                      <th>Method</th>
-                      <th>Tx Hash</th>
-                      <th>Gas</th>
-                      <th>Payload Details</th>
-                    </tr>
-                  </thead>
-                  <tbody id="blockchain-ledger-body">
-                    <!-- Loaded dynamically -->
-                  </tbody>
-                </table>
-                <div id="blockchain-ledger-empty" class="text-center py-4 d-none text-muted">
-                  <i class="bi bi-hr fs-2"></i>
-                  <p class="mb-0 mt-2">No transactions recorded on this block height yet.</p>
+        <!-- ── L2 EVM BLOCKCHAIN EXPLORER CONTAINER ────────────────── -->
+        <div id="blockchain-view-container" class="d-none mb-4">
+          <!-- Stats Banner -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-3 col-6">
+              <div class="p-3 rounded d-flex align-items-center justify-content-between" style="background: rgba(30, 41, 59, 0.25); border: 1px solid var(--glass-border);">
+                <div>
+                  <span class="d-block text-muted small" style="font-size:0.75rem;">L2 Network Status</span>
+                  <span class="fw-bold text-white d-flex align-items-center gap-1 mt-1" style="font-size:0.88rem;">
+                    <span class="status-dot available" style="width: 8px; height: 8px;"></span>
+                    <span id="blockchain-net-name">Arbitrum Sepolia</span>
+                  </span>
                 </div>
+                <i class="bi bi-cpu-fill fs-3 text-info"></i>
+              </div>
+            </div>
+            <div class="col-md-3 col-6">
+              <div class="p-3 rounded d-flex align-items-center justify-content-between" style="background: rgba(30, 41, 59, 0.25); border: 1px solid var(--glass-border);">
+                <div>
+                  <span class="d-block text-muted small" style="font-size:0.75rem;">Block Height</span>
+                  <span class="fs-5 fw-bold text-white mt-1 d-block" id="blockchain-block-height">0</span>
+                </div>
+                <i class="bi bi-database-fill fs-3 text-primary"></i>
+              </div>
+            </div>
+            <div class="col-md-3 col-6">
+              <div class="p-3 rounded d-flex align-items-center justify-content-between" style="background: rgba(30, 41, 59, 0.25); border: 1px solid var(--glass-border);">
+                <div>
+                  <span class="d-block text-muted small" style="font-size:0.75rem;">Total Minted SBTs</span>
+                  <span class="fs-5 fw-bold text-white mt-1 d-block" id="blockchain-total-sbts">0</span>
+                </div>
+                <i class="bi bi-award-fill fs-3 text-warning"></i>
+              </div>
+            </div>
+            <div class="col-md-3 col-6">
+              <div class="p-3 rounded d-flex align-items-center justify-content-between" style="background: rgba(30, 41, 59, 0.25); border: 1px solid var(--glass-border);">
+                <div>
+                  <span class="d-block text-muted small" style="font-size:0.75rem;">Smart Contract Address</span>
+                  <span class="fw-bold mt-1 text-white-50 d-block user-select-all" id="blockchain-contract-addr" style="font-size:0.78rem;">0x7a43f891F891F891F891F891F891F891F891F891</span>
+                </div>
+                <i class="bi bi-file-earmark-code-fill fs-3 text-success"></i>
               </div>
             </div>
           </div>
 
-          <!-- Column 2: Soulbound Token (SBT) Credentials -->
-          <div class="col-12 col-xl-5">
-            <div class="form-card w-100 m-0 p-4" style="max-width: 100%; background: rgba(30, 27, 75, 0.25); border: 1px solid var(--glass-border);">
-              <h3 class="fs-5 fw-bold mb-3 text-white"><i class="bi bi-shield-lock-fill text-warning me-2"></i>Verified Soulbound Tokens (SBT)</h3>
-              <div id="blockchain-sbt-list" class="d-flex flex-column gap-3" style="max-height: 480px; overflow-y: auto; padding-right: 4px;">
-                <!-- SBT credentials rendered here -->
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Transaction Verification Receipt Modal -->
-      <div class="modal fade" id="tx-receipt-modal" tabindex="-1" aria-labelledby="txReceiptModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-          <div class="modal-content text-white" style="background: #0f172a; border: 1px solid var(--glass-border); border-radius: var(--border-radius);">
-            <div class="modal-header border-bottom border-secondary">
-              <h5 class="modal-title fw-bold" id="txReceiptModalLabel"><i class="bi bi-receipt-cutoff me-2 text-warning"></i>Immutable On-Chain Receipt</h5>
-              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-              <div class="p-3 rounded bg-dark border border-secondary-subtle font-monospace text-start mb-3" style="font-size:0.8rem; background: #070b13 !important;">
-                <p class="mb-2"><span class="text-info">Transaction Hash:</span> <span id="receipt-tx-hash" class="text-warning font-monospace">--</span></p>
-                <p class="mb-2"><span class="text-info">Block Number:</span> <span id="receipt-block-num" class="text-white">--</span></p>
-                <p class="mb-2"><span class="text-info">Timestamp:</span> <span id="receipt-timestamp" class="text-white-50">--</span></p>
-                <p class="mb-2"><span class="text-info">From:</span> <span id="receipt-from" class="text-white-50">--</span></p>
-                <p class="mb-2"><span class="text-info">To:</span> <span id="receipt-to" class="text-white-50">--</span></p>
-                <p class="mb-2"><span class="text-info">Gas Used:</span> <span id="receipt-gas" class="text-success">--</span></p>
-                <hr style="border-top: 1px dashed rgba(255,255,255,0.15)">
-                <p class="mb-1 text-info fw-bold">Decoded Event & State Data:</p>
-                <pre id="receipt-payload" class="text-light m-0" style="white-space: pre-wrap; font-size:0.8rem; line-height: 1.4;"></pre>
-              </div>
-              <div class="alert alert-success d-flex align-items-center gap-2 mb-0 py-2 border-0" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7; font-size: 0.8rem;">
-                <i class="bi bi-shield-fill-check fs-5"></i>
-                <span>This transaction is cryptographic proof of community service. Block verification completed by L2 network validators.</span>
-              </div>
-            </div>
-            <div class="modal-footer border-top border-secondary">
-              <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">Close</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ── Kanban Board (3 columns) ──────────────────────────── -->
-      <!--
-        Each column holds cards for one status: Open, In Progress, Resolved.
-        Cards are inserted here dynamically by dashboard.js logic in app.js.
-      -->
-      <div class="row g-3 d-none" id="kanban-board">
-        <!-- Kanban Columns -->
-        <div class="col-12 col-xl-9">
           <div class="row g-3">
-            <!-- OPEN Column -->
-            <div class="col-12 col-lg-4">
-              <div class="kanban-column-header open">
-                <i class="bi bi-circle"></i>
-                Open
-                <span class="ms-auto badge" style="background:#a64ff1;" id="count-open">0</span>
-              </div>
-              <div id="col-open">
-                <!-- Request cards injected here -->
+            <!-- Column 1: L2 Ledger Blocks & Transactions -->
+            <div class="col-12 col-xl-7">
+              <div class="form-card w-100 m-0 p-4" style="max-width: 100%; background: rgba(30, 41, 59, 0.25); border: 1px solid var(--glass-border);">
+                <h3 class="fs-5 fw-bold mb-3 text-white"><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>L2 EVM Ledger Explorer</h3>
+                <div class="logs-table-wrapper" style="max-height: 480px; overflow-y: auto;">
+                  <table class="logs-table mb-0">
+                    <thead>
+                      <tr>
+                        <th>Block #</th>
+                        <th>Method</th>
+                        <th>Tx Hash</th>
+                        <th>Gas</th>
+                        <th>Payload Details</th>
+                      </tr>
+                    </thead>
+                    <tbody id="blockchain-ledger-body">
+                      <!-- Loaded dynamically -->
+                    </tbody>
+                  </table>
+                  <div id="blockchain-ledger-empty" class="text-center py-4 d-none text-muted">
+                    <i class="bi bi-hr fs-2"></i>
+                    <p class="mb-0 mt-2">No transactions recorded on this block height yet.</p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <!-- IN PROGRESS Column -->
-            <div class="col-12 col-lg-4">
-              <div class="kanban-column-header progress">
-                <i class="bi bi-arrow-repeat"></i>
-                In Progress
-                <span class="ms-auto badge bg-warning text-dark" id="count-progress">0</span>
-              </div>
-              <div id="col-progress">
-                <!-- Request cards injected here -->
-              </div>
-            </div>
-
-            <!-- RESOLVED Column -->
-            <div class="col-12 col-lg-4">
-              <div class="kanban-column-header resolved d-flex align-items-center">
-                <i class="bi bi-check-circle"></i>
-                <span class="me-2">Resolved</span>
-                <span class="badge bg-success me-auto" id="count-resolved">0</span>
-                <button id="clear-resolved-btn" class="btn btn-outline-danger btn-sm py-0 px-2 border-0" style="font-size:0.75rem; background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3) !important; color: #fca5a5; display: none;" title="Delete all resolved requests from database">
-                  <i class="bi bi-trash-fill me-1"></i>Clear All
-                </button>
-              </div>
-              <div id="col-resolved">
-                <!-- Request cards injected here -->
+            <!-- Column 2: Soulbound Token (SBT) Credentials -->
+            <div class="col-12 col-xl-5">
+              <div class="form-card w-100 m-0 p-4" style="max-width: 100%; background: rgba(30, 27, 75, 0.25); border: 1px solid var(--glass-border);">
+                <h3 class="fs-5 fw-bold mb-3 text-white"><i class="bi bi-shield-lock-fill text-warning me-2"></i>Verified Soulbound Tokens (SBT)</h3>
+                <div id="blockchain-sbt-list" class="d-flex flex-column gap-3" style="max-height: 480px; overflow-y: auto; padding-right: 4px;">
+                  <!-- SBT credentials rendered here -->
+                </div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Volunteer Roster Sidebar -->
-        <div class="col-12 col-xl-3">
-          <div class="form-card w-100 m-0 p-3" style="max-width: 100%; height: fit-content; background: rgba(30, 27, 75, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); border-radius: 1rem;">
-            <div class="d-flex align-items-center justify-content-between mb-3">
-              <h3 class="fs-6 fw-bold mb-0 d-flex align-items-center text-white" style="letter-spacing: 0.5px;">
-                <i class="bi bi-people-fill me-2 text-primary"></i>Volunteer Roster
-              </h3>
-              <button class="btn btn-primary btn-sm py-1 px-2.5" data-bs-toggle="modal" data-bs-target="#add-volunteer-modal" style="font-size:0.75rem; border-radius: 6px;">
-                <i class="bi bi-person-plus-fill me-1"></i>Add
-              </button>
-            </div>
-            <!-- Search for volunteers -->
-            <div class="mb-3">
-              <div class="input-group input-group-sm">
-                <span class="input-group-text bg-dark border-secondary text-muted" style="border-right: none; background: rgba(15, 12, 41, 0.5) !important;"><i class="bi bi-search"></i></span>
-                <input type="text" id="volunteer-search" class="form-control form-control-sm border-secondary text-white" style="background: rgba(15, 12, 41, 0.5); border-left: none;" placeholder="Search roster..." />
-              </div>
-            </div>
-            <!-- Volunteers list container -->
-            <div id="volunteers-list" class="d-flex flex-column gap-2" style="max-height: 580px; overflow-y: auto; padding-right: 4px;">
-              <!-- Roster cards will be injected dynamically -->
-            </div>
-          </div>
-        </div>
+        <footer class="mt-auto">
+          Built with ❤️ for the Hackathon &nbsp;·&nbsp; Smart Resource Allocation MVP
+        </footer>
+      </main>
 
-      </div><!-- /kanban-board -->
-
-    </main>
+    </div><!-- /dashboard-layout-container -->
 
     <!-- ── Restock Supplies Modal ────────────────────────────── -->
     <div class="modal fade" id="restock-modal" tabindex="-1" aria-labelledby="restockModalLabel" aria-hidden="true">
@@ -536,8 +549,39 @@
       </div>
     </div>
 
+    <!-- ── Immutable On-Chain Receipt Modal ──────────────────── -->
+    <div class="modal fade" id="tx-receipt-modal" tabindex="-1" aria-labelledby="txReceiptModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content text-white" style="background: #0f172a; border: 1px solid var(--glass-border); border-radius: var(--border-radius);">
+          <div class="modal-header border-bottom border-secondary">
+            <h5 class="modal-title fw-bold" id="txReceiptModalLabel"><i class="bi bi-receipt-cutoff me-2 text-warning"></i>Immutable On-Chain Receipt</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="p-3 rounded bg-dark border border-secondary-subtle font-monospace text-start mb-3" style="font-size:0.8rem; background: #070b13 !important;">
+              <p class="mb-2"><span class="text-info">Transaction Hash:</span> <span id="receipt-tx-hash" class="text-warning font-monospace">--</span></p>
+              <p class="mb-2"><span class="text-info">Block Number:</span> <span id="receipt-block-num" class="text-white">--</span></p>
+              <p class="mb-2"><span class="text-info">Timestamp:</span> <span id="receipt-timestamp" class="text-white-50">--</span></p>
+              <p class="mb-2"><span class="text-info">From:</span> <span id="receipt-from" class="text-white-50">--</span></p>
+              <p class="mb-2"><span class="text-info">To:</span> <span id="receipt-to" class="text-white-50">--</span></p>
+              <p class="mb-2"><span class="text-info">Gas Used:</span> <span id="receipt-gas" class="text-success">--</span></p>
+              <hr style="border-top: 1px dashed rgba(255,255,255,0.15)">
+              <p class="mb-1 text-info fw-bold">Decoded Event & State Data:</p>
+              <pre id="receipt-payload" class="text-light m-0" style="white-space: pre-wrap; font-size:0.8rem; line-height: 1.4;"></pre>
+            </div>
+            <div class="alert alert-success d-flex align-items-center gap-2 mb-0 py-2 border-0" style="background: rgba(16, 185, 129, 0.15); color: #6ee7b7; font-size: 0.8rem;">
+              <i class="bi bi-shield-fill-check fs-5"></i>
+              <span>This transaction is cryptographic proof of community service. Block verification completed by L2 network validators.</span>
+            </div>
+          </div>
+          <div class="modal-footer border-top border-secondary">
+            <button type="button" class="btn btn-outline-light btn-sm" data-bs-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
 
-    <!-- History Logs Full-screen Modal / Overlay -->
+    <!-- ── History Logs Full-screen Modal / Overlay ───────────── -->
     <div class="logs-overlay-container d-none" id="logs-modal-container">
       <div class="logs-modal-content">
         <div class="logs-modal-header">
@@ -589,10 +633,6 @@
     <!-- Toast Container for Custom Glassmorphic Notifications -->
     <div id="toast-container" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 9999;"></div>
 
-    <footer>
-      Built with ❤️ for the Hackathon &nbsp;·&nbsp; Smart Resource Allocation MVP
-    </footer>
-
     <!-- Bootstrap 5 JS (CDN) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Leaflet.js library for Map View -->
@@ -604,5 +644,217 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <!-- Our frontend logic -->
     <script src="app.js"></script>
+
+    <!-- Sidebar and Charts Synchronization Scripts -->
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        // DOM sidebar components
+        const sbOverview = document.getElementById("sb-overview");
+        const sbRequests = document.getElementById("sb-requests");
+        const sbVolunteers = document.getElementById("sb-volunteers");
+        const sbMap = document.getElementById("sb-map");
+        const sbBlockchain = document.getElementById("sb-blockchain");
+        const sbLogs = document.getElementById("sb-logs");
+
+        const overviewContainer = document.getElementById("overview-view-container");
+        const kanbanBoardWrapper = document.getElementById("kanban-board-wrapper");
+        const volunteersViewContainer = document.getElementById("volunteers-view-container");
+        const mapViewContainer = document.getElementById("map-view-container");
+        const blockchainViewContainer = document.getElementById("blockchain-view-container");
+
+        // Hidden triggers linked to original app.js controls
+        const btnViewBoard = document.getElementById("btn-view-board");
+        const btnViewMap = document.getElementById("btn-view-map");
+        const btnViewBlockchain = document.getElementById("btn-view-blockchain");
+        const btnViewLogs = document.getElementById("view-logs-btn");
+
+        function clearSidebarActive() {
+          document.querySelectorAll(".sidebar-item").forEach(item => {
+            item.classList.remove("active");
+          });
+        }
+
+        sbOverview.addEventListener("click", () => {
+          clearSidebarActive();
+          sbOverview.classList.add("active");
+          overviewContainer.classList.remove("d-none");
+          kanbanBoardWrapper.classList.add("d-none");
+          volunteersViewContainer.classList.add("d-none");
+          mapViewContainer.classList.add("d-none");
+          blockchainViewContainer.classList.add("d-none");
+        });
+
+        sbRequests.addEventListener("click", () => {
+          clearSidebarActive();
+          sbRequests.classList.add("active");
+          overviewContainer.classList.add("d-none");
+          volunteersViewContainer.classList.add("d-none");
+          btnViewBoard.click();
+          kanbanBoardWrapper.classList.remove("d-none");
+        });
+
+        sbVolunteers.addEventListener("click", () => {
+          clearSidebarActive();
+          sbVolunteers.classList.add("active");
+          overviewContainer.classList.add("d-none");
+          kanbanBoardWrapper.classList.add("d-none");
+          volunteersViewContainer.classList.remove("d-none");
+          mapViewContainer.classList.add("d-none");
+          blockchainViewContainer.classList.add("d-none");
+        });
+
+        sbMap.addEventListener("click", () => {
+          clearSidebarActive();
+          sbMap.classList.add("active");
+          overviewContainer.classList.add("d-none");
+          volunteersViewContainer.classList.add("d-none");
+          btnViewMap.click();
+          kanbanBoardWrapper.classList.add("d-none");
+        });
+
+        sbBlockchain.addEventListener("click", () => {
+          clearSidebarActive();
+          sbBlockchain.classList.add("active");
+          overviewContainer.classList.add("d-none");
+          volunteersViewContainer.classList.add("d-none");
+          btnViewBlockchain.click();
+          kanbanBoardWrapper.classList.add("d-none");
+        });
+
+        sbLogs.addEventListener("click", () => {
+          btnViewLogs.click();
+        });
+
+        // Synced active view state listeners (e.g. if routes/clicks on cards force view changes)
+        setInterval(() => {
+          const isBoardActive = btnViewBoard.classList.contains("active");
+          const isMapActive = btnViewMap.classList.contains("active");
+          const isBlockchainActive = btnViewBlockchain.classList.contains("active");
+
+          if (isBoardActive && !sbRequests.classList.contains("active") && overviewContainer.classList.contains("d-none") && volunteersViewContainer.classList.contains("d-none")) {
+            clearSidebarActive();
+            sbRequests.classList.add("active");
+            kanbanBoardWrapper.classList.remove("d-none");
+          } else if (isMapActive && !sbMap.classList.contains("active") && overviewContainer.classList.contains("d-none") && volunteersViewContainer.classList.contains("d-none")) {
+            clearSidebarActive();
+            sbMap.classList.add("active");
+            kanbanBoardWrapper.classList.add("d-none");
+          } else if (isBlockchainActive && !sbBlockchain.classList.contains("active") && overviewContainer.classList.contains("d-none") && volunteersViewContainer.classList.contains("d-none")) {
+            clearSidebarActive();
+            sbBlockchain.classList.add("active");
+            kanbanBoardWrapper.classList.add("d-none");
+          }
+        }, 300);
+
+        // ── Chart.js Visualization Initialization ───────────────────
+        const ctxDistribution = document.getElementById("categoryDistributionChart").getContext("2d");
+        const ctxTrend = document.getElementById("requestsTrendChart").getContext("2d");
+
+        const categoryChart = new Chart(ctxDistribution, {
+          type: 'doughnut',
+          data: {
+            labels: ['Medical', 'Food', 'Shelter', 'Other'],
+            datasets: [{
+              data: [0, 0, 0, 0],
+              backgroundColor: [
+                'rgba(56, 189, 248, 0.75)',  // Sky blue
+                'rgba(20, 184, 166, 0.75)',  // Teal
+                'rgba(245, 158, 11, 0.75)',  // Gold
+                'rgba(148, 163, 184, 0.75)'  // Slate
+              ],
+              borderColor: 'rgba(255, 255, 255, 0.08)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+                labels: { color: '#cbd5e1', font: { family: 'Plus Jakarta Sans', size: 10 } }
+              }
+            }
+          }
+        });
+
+        const trendChart = new Chart(ctxTrend, {
+          type: 'bar',
+          data: {
+            labels: ['Open', 'In Progress', 'Resolved'],
+            datasets: [{
+              label: 'Active Requests',
+              data: [0, 0, 0],
+              backgroundColor: [
+                'rgba(239, 68, 68, 0.7)',   // Crimson Red
+                'rgba(245, 158, 11, 0.7)',   // Amber
+                'rgba(16, 185, 129, 0.7)'    // Emerald Green
+              ],
+              borderColor: 'rgba(255, 255, 255, 0.08)',
+              borderWidth: 1
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              y: {
+                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 10 }, stepSize: 1 }
+              },
+              x: {
+                grid: { display: false },
+                ticks: { color: '#94a3b8', font: { family: 'Plus Jakarta Sans', size: 10 } }
+              }
+            }
+          }
+        });
+
+        // Update function reading from DOM state counter values
+        function updateCharts() {
+          // Status trends
+          const openVal = parseInt(document.getElementById("stat-open").textContent) || 0;
+          const progressVal = parseInt(document.getElementById("stat-progress").textContent) || 0;
+          const resolvedVal = parseInt(document.getElementById("stat-resolved").textContent) || 0;
+          
+          trendChart.data.datasets[0].data = [openVal, progressVal, resolvedVal];
+          trendChart.update();
+
+          // Categories from loaded cards
+          let medicalCount = 0;
+          let foodCount = 0;
+          let shelterCount = 0;
+          let otherCount = 0;
+
+          document.querySelectorAll(".request-card").forEach(card => {
+            const categoryBadge = card.querySelector(".badge-category");
+            if (categoryBadge) {
+              const txt = categoryBadge.textContent.toLowerCase();
+              if (txt.includes("medical")) medicalCount++;
+              else if (txt.includes("food")) foodCount++;
+              else if (txt.includes("shelter")) shelterCount++;
+              else if (txt.includes("other")) otherCount++;
+            }
+          });
+
+          // Check if total matches, otherwise fall back to simple seed counts to maintain visual appeal on empty boards
+          const totalNeeds = medicalCount + foodCount + shelterCount + otherCount;
+          if (totalNeeds === 0 && (openVal + progressVal) > 0) {
+            // board hasn't loaded nodes yet, wait for skeletons to dissolve
+            categoryChart.data.datasets[0].data = [0, 0, 0, 0];
+          } else {
+            categoryChart.data.datasets[0].data = [medicalCount, foodCount, shelterCount, otherCount];
+          }
+          categoryChart.update();
+        }
+
+        // Periodic trigger syncing
+        setTimeout(updateCharts, 1200);
+        setInterval(updateCharts, 1500);
+      });
+    </script>
   </body>
 </html>

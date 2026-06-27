@@ -2816,3 +2816,216 @@ footer {
 /* Map Div Marker Pulse adjustments */
 .status-resolved .marker-dot { background-color: var(--success) !important; }
 .status-resolved .marker-pulse { background-color: rgba(16, 185, 129, 0.4) !important; }
+
+/* ============================================================
+   NGO Dashboard Redesign Styles
+   ============================================================ */
+.dashboard-layout-container {
+  display: flex;
+  min-height: 100vh;
+  width: 100%;
+}
+
+.sidebar-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 280px;
+  background: linear-gradient(180deg, #133b24 0%, #081a10 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  padding: 1.5rem;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.8rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  text-decoration: none !important;
+}
+
+.sidebar-logo span {
+  font-size: 1.5rem;
+}
+
+.sidebar-logo h2 {
+  font-family: "Outfit", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: white;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 1.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-user-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #cd9a62;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Outfit", sans-serif;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.sidebar-user-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-user-info .user-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: white;
+  line-height: 1.2;
+}
+
+.sidebar-user-info .user-role {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.45);
+  margin-top: 1px;
+}
+
+.sidebar-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex-grow: 1;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.75rem 0.95rem;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none !important;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  text-align: left;
+  width: 100%;
+}
+
+.sidebar-item i {
+  font-size: 1.05rem;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.sidebar-item:hover i {
+  transform: scale(1.1);
+}
+
+.sidebar-item.active {
+  background: #a37254 !important; /* BrewMaster light clay brown */
+  color: white;
+  box-shadow: 0 4px 15px rgba(163, 114, 84, 0.25);
+}
+
+.main-content-panel {
+  margin-left: 280px;
+  width: calc(100% - 280px);
+  min-height: 100vh;
+  padding: 2.2rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Charts and layout overview */
+.chart-container-card {
+  background: rgba(30, 41, 59, 0.25);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--border-radius);
+  padding: 1.5rem;
+  box-shadow: var(--glass-glow);
+  height: 380px;
+  position: relative;
+}
+
+.chart-container-card h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+}
+
+.top-action-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.top-action-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (max-width: 991px) {
+  .sidebar-container {
+    position: relative;
+    width: 100%;
+    height: auto;
+    bottom: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 1.2rem;
+  }
+  .main-content-panel {
+    margin-left: 0;
+    width: 100%;
+    padding: 1.5rem;
+  }
+  .dashboard-layout-container {
+    flex-direction: column;
+  }
+}
+
+/* ── Volunteer Directory Grid Layout ── */
+#volunteers-list {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)) !important;
+  gap: 1.25rem !important;
+  max-height: none !important;
+  overflow-y: visible !important;
+}
+
+#volunteers-list .roster-card {
+  margin-bottom: 0 !important;
+}
