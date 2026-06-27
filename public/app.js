@@ -2395,7 +2395,7 @@ function initHistoryLogs() {
       return `
         <tr class="clickable" data-log-id="${log.id}">
           <td>
-            <div class="fw-semibold text-white">${log.description}</div>
+            <div class="fw-semibold">${log.description}</div>
             <div class="small text-muted" style="font-size:0.75rem;">${log.address || log.zone}</div>
           </td>
           <td><span class="badge bg-secondary-subtle text-light-emphasis border border-secondary-subtle px-2 py-1" style="font-size:0.72rem;">${log.category || 'Other'}</span></td>
