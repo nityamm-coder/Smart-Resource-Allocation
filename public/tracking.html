@@ -16,20 +16,116 @@
 
   <style>
     /* Custom style overrides for tracking page */
+    body {
+      background: linear-gradient(135deg, #effaf0 0%, #ddf3e0 50%, #c7eed1 100%);
+    }
+
+    .tracking-navbar {
+      background: rgba(45, 154, 78, 0.16);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(45, 154, 78, 0.18);
+      box-shadow: 0 10px 30px rgba(45, 154, 78, 0.12);
+    }
+    .tracking-navbar .navbar-brand {
+      color: var(--brand-primary);
+      font-weight: 800;
+    }
+    .tracking-navbar .navbar-brand:hover {
+      color: #14532d;
+    }
+    .tracking-navbar .btn-outline-success {
+      color: #14532d;
+      border-color: rgba(45, 154, 78, 0.35);
+    }
+    .tracking-navbar .btn-outline-success:hover {
+      background: rgba(45, 154, 78, 0.12);
+      border-color: var(--brand-primary);
+      color: var(--brand-primary);
+    }
+
     .tracking-container {
       margin-top: 40px;
     }
-    .safety-tip-item {
-      transition: all 0.3s ease;
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      border-radius: 8px;
+    .tracking-container .form-card {
+      color: var(--text-dark);
+      background: rgba(255, 255, 255, 0.96);
+      border: 1px solid rgba(45, 154, 78, 0.14);
+      box-shadow: 0 20px 40px rgba(15, 23, 42, 0.08);
     }
-    .safety-tip-item:hover {
-      background: rgba(99, 102, 241, 0.05);
-      border-color: rgba(99, 102, 241, 0.2);
+    .tracking-container .form-card h2,
+    .tracking-container .form-card h3,
+    .tracking-container .form-card h4,
+    .tracking-container .form-card h5 {
+      color: var(--text-dark);
+    }
+    .tracking-container .form-card p,
+    .tracking-container .form-card label,
+    .tracking-container .form-card span,
+    .tracking-container .form-card a,
+    .tracking-container .form-card .badge {
+      color: inherit;
+    }
+    .tracking-container .form-card .text-muted {
+      color: #4b7a5c !important;
+    }
+    .tracking-container .form-card .text-info,
+    .tracking-container .form-card a.text-info {
+      color: #2563eb !important;
+    }
+    .tracking-container .form-card .bg-success.bg-opacity-10 {
+      background-color: rgba(52, 211, 153, 0.12) !important;
+    }
+    .tracking-container .status-stepper .step {
+      color: #4b7a5c;
+    }
+    .tracking-container .status-stepper .step.active,
+    .tracking-container .status-stepper .step.completed {
+      color: var(--brand-primary);
+    }
+    .tracking-container .safety-tip-item {
+      transition: all 0.3s ease;
+      background: rgba(247, 255, 245, 0.95);
+      border: 1px solid rgba(45, 154, 78, 0.16);
+      border-radius: 8px;
+      color: var(--text-dark);
+    }
+    .tracking-container .safety-tip-item:hover {
+      background: rgba(240, 253, 244, 0.98);
+      border-color: rgba(45, 154, 78, 0.25);
       transform: translateX(4px);
     }
+    .tracking-container .safety-tip-item span {
+      color: var(--text-dark) !important;
+    }
+    .tracking-container .timeline-event {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      padding: 1rem 1rem 1rem 1.1rem;
+      margin-bottom: 1rem;
+      border-radius: 14px;
+      background: rgba(246, 253, 244, 0.95);
+      border: 1px solid rgba(45, 154, 78, 0.14);
+      color: var(--text-dark);
+    }
+    .tracking-container .timeline-event-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--brand-primary);
+      box-shadow: 0 0 0 6px rgba(45, 154, 78, 0.08);
+      margin-bottom: 0.2rem;
+    }
+    .tracking-container .timeline-event-time {
+      font-size: 0.78rem;
+      color: #4b7a5c;
+    }
+    .tracking-container .timeline-event-note {
+      font-size: 0.95rem;
+      color: var(--text-dark);
+      line-height: 1.5;
+    }
+
     /* Star Rating Widget */
     .star-rating {
       font-size: 2.2rem;
@@ -62,7 +158,7 @@
       left: 12.5%;
       right: 12.5%;
       height: 4px;
-      background: rgba(255, 255, 255, 0.08);
+      background: rgba(45, 154, 78, 0.12);
       z-index: 1;
     }
     .status-stepper .step-progress {
@@ -88,8 +184,8 @@
       width: 54px;
       height: 54px;
       border-radius: 50%;
-      background: #1e293b;
-      border: 3px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.96);
+      border: 3px solid rgba(45, 154, 78, 0.18);
       color: var(--text-muted);
       display: flex;
       align-items: center;
@@ -118,6 +214,7 @@
     .status-stepper .step.active {
       color: var(--brand-primary);
     }
+
     @keyframes pulse-indigo {
       0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
       70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
@@ -140,17 +237,17 @@
   </div>
 
   <!-- Navbar -->
-  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <nav class="navbar navbar-expand-lg tracking-navbar">
     <div class="container">
       <a class="navbar-brand" href="index.html">
-        <i class="bi bi-heart-pulse-fill me-2 text-danger"></i>
+        <i class="bi bi-heart-pulse-fill me-2 text-success"></i>
         Smart Resource Allocation
       </a>
       <div class="ms-auto">
-        <a href="index.html" class="btn btn-outline-light btn-sm me-2">
+        <a href="index.html" class="btn btn-outline-success btn-sm me-2">
           <i class="bi bi-arrow-left me-1"></i>Submit New Request
         </a>
-        <a href="dashboard.html" class="btn btn-outline-info btn-sm">
+        <a href="dashboard.html" class="btn btn-outline-success btn-sm">
           <i class="bi bi-grid-3x3-gap me-1"></i>NGO Dashboard
         </a>
       </div>
@@ -163,15 +260,15 @@
     <div class="form-card mb-4" style="max-width: 100%;">
       <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div>
-          <span class="badge bg-indigo mb-2" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Live Tracker</span>
+          <span class="badge bg-success text-white mb-2" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em;">Live Tracker</span>
           <h2 class="fs-4 fw-700 m-0" id="tracking-header">Loading Request Status...</h2>
           <div class="mt-2 d-flex align-items-center gap-2">
-            <p class="text-muted small mb-0" style="font-size: 0.9rem;">Tracking ID: <strong id="request-id-display" class="text-warning user-select-all px-2 py-1 bg-dark rounded border border-warning">--</strong></p>
+            <p class="text-muted small mb-0" style="font-size: 0.9rem;">Tracking ID: <strong id="request-id-display" class="text-success user-select-all px-2 py-1 bg-white rounded border border-success">--</strong></p>
             <button id="copy-id-btn" class="btn btn-sm btn-outline-warning" title="Copy Tracking ID"><i class="bi bi-clipboard"></i></button>
           </div>
         </div>
         <div id="status-badge-container">
-          <span class="badge bg-secondary py-2 px-4 fs-5">Syncing...</span>
+          <span class="badge bg-success text-white py-2 px-4 fs-5">Syncing...</span>
         </div>
       </div>
     </div>
@@ -204,19 +301,19 @@
       <div class="col-12 col-md-6">
         <!-- Request Summary Info -->
         <div class="form-card mb-4" style="max-width: 100%;">
-          <h3 class="fs-5 fw-700 mb-3"><i class="bi bi-info-circle text-indigo me-2"></i>Request Details</h3>
-          <div class="p-3 rounded border border-secondary-subtle bg-opacity-10 bg-white" style="font-size: 0.88rem;">
-            <p class="mb-2"><strong>Category:</strong> <span id="info-category">--</span></p>
-            <p class="mb-2"><strong>Urgency Level:</strong> <span id="info-urgency">--</span></p>
-            <p class="mb-2"><strong>Zone/Locality:</strong> <span id="info-zone">--</span></p>
-            <p class="mb-2"><strong>Address:</strong> <span id="info-address">--</span></p>
-            <p class="mb-0"><strong>Your Description:</strong> <span id="info-description">--</span></p>
+          <h3 class="fs-5 fw-700 mb-3"><i class="bi bi-info-circle text-success me-2"></i>Request Details</h3>
+          <div class="p-3 rounded" style="font-size: 0.88rem; background: rgba(245, 251, 239, 0.95); border: 1px solid rgba(45, 154, 78, 0.16); color: var(--text-dark);">
+            <p class="mb-2"><strong style="color: var(--text-dark);">Category:</strong> <span id="info-category">--</span></p>
+            <p class="mb-2"><strong style="color: var(--text-dark);">Urgency Level:</strong> <span id="info-urgency">--</span></p>
+            <p class="mb-2"><strong style="color: var(--text-dark);">Zone/Locality:</strong> <span id="info-zone">--</span></p>
+            <p class="mb-2"><strong style="color: var(--text-dark);">Address:</strong> <span id="info-address">--</span></p>
+            <p class="mb-0"><strong style="color: var(--text-dark);">Your Description:</strong> <span id="info-description">--</span></p>
           </div>
           
           <!-- Dynamic Translation Row -->
           <div id="info-translation-container" class="mt-3 d-none">
-            <div class="p-2 rounded text-start" style="font-size: 0.82rem; background: rgba(99, 102, 241, 0.08); border: 1px solid rgba(99, 102, 241, 0.2); border-left: 4px solid var(--brand-primary); color: #c7d2fe;">
-              <i class="bi bi-translate me-1 text-primary"></i> <strong>AI Translated (<span id="info-lang">--</span> ➔ English):</strong> "<span id="info-translation">--</span>"
+            <div class="p-2 rounded text-start" style="font-size: 0.82rem; background: rgba(45, 154, 78, 0.08); border: 1px solid rgba(45, 154, 78, 0.2); border-left: 4px solid var(--brand-primary); color: var(--text-dark);">
+              <i class="bi bi-translate me-1 text-success"></i> <strong>AI Translated (<span id="info-lang">--</span> ➔ English):</strong> "<span id="info-translation">--</span>"
             </div>
           </div>
         </div>
@@ -224,13 +321,13 @@
         <!-- Matched Volunteer Info -->
         <div class="form-card mb-4 d-none" id="volunteer-card" style="max-width: 100%;">
           <h3 class="fs-5 fw-700 mb-3"><i class="bi bi-person-heart text-success me-2"></i>Matched Volunteer</h3>
-          <div class="p-3 rounded text-start mb-3" style="font-size: 0.88rem; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
+          <div class="p-3 rounded text-start mb-3" style="font-size: 0.88rem; background: rgba(245, 251, 239, 0.95); border: 1px solid rgba(45,154,78,0.12);">
             <div class="d-flex align-items-center gap-3 mb-2">
-              <div class="bg-indigo p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+              <div class="bg-success p-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
                 <i class="bi bi-person-fill text-white fs-5"></i>
               </div>
               <div>
-                <h5 class="m-0 fs-6 fw-bold" id="vol-name">--</h5>
+                <h5 class="m-0 fs-6 fw-bold text-dark" id="vol-name">--</h5>
                 <p class="text-muted small m-0" id="vol-skills">Specialty: --</p>
               </div>
             </div>
@@ -262,7 +359,7 @@
 
             <div class="mb-3">
               <label for="feedback-text" class="form-label text-muted small fw-bold">Feedback / Comments (Optional)</label>
-              <textarea id="feedback-text" class="form-control form-control-sm text-white" style="background: rgba(15, 12, 41, 0.4); border: 1px solid rgba(255,255,255,0.08);" rows="3" placeholder="Tell us how the volunteer helped you..."></textarea>
+              <textarea id="feedback-text" class="form-control form-control-sm text-dark" style="background: rgba(255,255,255,0.96); border: 1px solid rgba(45,154,78,0.14); color: var(--text-dark);" rows="3" placeholder="Tell us how the volunteer helped you..."></textarea>
             </div>
 
             <div class="mb-3 form-check text-start">
@@ -279,17 +376,17 @@
 
           <div id="rating-success-container" class="d-none text-center py-4">
             <i class="bi bi-shield-fill-check text-success fs-1 d-block mb-3" style="animation: pulse-indigo 2s infinite;"></i>
-            <h4 class="fw-bold text-white mb-2">Thank You! Rating Secured On-Chain</h4>
+            <h4 class="fw-bold text-dark mb-2">Thank You! Rating Secured On-Chain</h4>
             <p class="text-muted small mb-3">Your feedback was successfully written to the L2 EVM trust layer.</p>
-            <div class="p-3 rounded text-start mb-2 font-monospace" style="font-size:0.75rem; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.06);">
-              <div class="mb-1 text-white-50">SBT Minted: <strong class="text-warning" id="success-sbt-id">#0</strong></div>
-              <div class="mb-1 text-white-50 text-truncate">L2 Tx: <a href="" id="success-tx-link" target="_blank" class="text-info text-break font-monospace">0x00...</a></div>
+            <div class="p-3 rounded text-start mb-2 font-monospace" style="font-size:0.75rem; background: rgba(255,255,255,0.96); border: 1px solid rgba(45,154,78,0.14); color: #1f2937;">
+              <div class="mb-1 text-muted">SBT Minted: <strong class="text-warning" id="success-sbt-id">#0</strong></div>
+              <div class="mb-1 text-muted text-truncate">L2 Tx: <a href="" id="success-tx-link" target="_blank" class="text-info text-break font-monospace">0x00...</a></div>
               <div class="text-muted">Block: <span id="success-block-num">--</span></div>
             </div>
             <!-- Supply token audit trail verification box -->
-            <div id="success-supply-info" class="p-3 rounded text-start mb-3 font-monospace d-none" style="font-size:0.75rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.25);">
+            <div id="success-supply-info" class="p-3 rounded text-start mb-3 font-monospace d-none" style="font-size:0.75rem; background: rgba(240, 253, 244, 0.9); border: 1px solid rgba(16, 185, 129, 0.25); color: #1f2937;">
               <div class="mb-1 text-success fw-bold"><i class="bi bi-check-circle-fill me-1"></i>Supply Receipt Verified!</div>
-              <div class="mb-1 text-white-50 text-truncate">Supply L2 Tx: <a href="" id="success-supply-tx-link" target="_blank" class="text-info text-break font-monospace">0x00...</a></div>
+              <div class="mb-1 text-muted text-truncate">Supply L2 Tx: <a href="" id="success-supply-tx-link" target="_blank" class="text-info text-break font-monospace">0x00...</a></div>
               <div class="text-muted">Block: <span id="success-supply-block-num">--</span></div>
             </div>
             <p class="text-muted small mb-0">This verified record has been minted as a Soulbound Token (SBT) for your volunteer.</p>
@@ -301,14 +398,14 @@
       <div class="col-12 col-md-6">
         <!-- AI Life Saving Tips Card -->
         <div class="form-card mb-4" style="max-width: 100%;">
-          <h3 class="fs-5 fw-700 mb-3 text-indigo">
+          <h3 class="fs-5 fw-700 mb-3 text-success">
             <i class="bi bi-shield-fill-exclamation me-2 animate-pulse"></i>AI Life-Saving Instructions
           </h3>
           <p class="text-muted small mb-3">
             While you wait, follow these custom emergency precautions generated specifically for your situation by Google Gemini AI:
           </p>
           <div id="safety-tips-list" class="d-flex flex-column gap-2">
-            <div class="p-3 rounded text-center text-muted border border-secondary-subtle">
+            <div class="p-3 rounded text-center" style="background: rgba(241, 253, 244, 0.95); border: 1px solid rgba(45, 154, 78, 0.16); color: var(--text-dark);">
               <i class="bi bi-hourglass-split d-block fs-3 mb-2 animate-spin"></i>Generating safety instructions...
             </div>
           </div>
@@ -537,7 +634,7 @@
           <strong>${message}</strong>
         </div>`;
       safetyTipsList.innerHTML = `
-        <div class="text-muted p-3 text-center border border-secondary-subtle rounded">
+        <div class="p-3 text-center rounded" style="background: rgba(241, 253, 244, 0.95); border: 1px solid rgba(45, 154, 78, 0.16); color: var(--text-dark);">
           No tips available for invalid tracking sessions.
         </div>`;
     }
@@ -550,15 +647,15 @@
           <div class="col-12 col-md-8 col-lg-6">
             <div class="form-card text-center py-5 px-4 mt-5" style="max-width: 100%;">
               <i class="bi bi-clipboard-x text-warning mb-4 d-inline-block" style="font-size: 4rem; text-shadow: 0 0 20px rgba(245, 158, 11, 0.35);"></i>
-              <h2 class="fs-3 fw-800 text-white mb-3">No Active Request</h2>
+              <h2 class="fs-3 fw-800 text-dark mb-3">No Active Request</h2>
               <p class="text-muted mb-4 mx-auto" style="font-size: 1rem; max-width: 420px; line-height: 1.6;">
                 You don't have an active tracking session right now. Please submit a resource request first to get a live tracking ID.
               </p>
               <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
-                <a href="index.html" class="btn btn-primary px-4 py-2 rounded-pill font-label">
+                <a href="index.html" class="btn btn-success px-4 py-2 rounded-pill font-label">
                   <i class="bi bi-pencil-square me-2"></i>Make a Request First
                 </a>
-                <a href="index.html#track-search-form" class="btn btn-outline-light px-4 py-2 rounded-pill font-label">
+                <a href="index.html#track-search-form" class="btn btn-outline-success px-4 py-2 rounded-pill font-label">
                   <i class="bi bi-search me-2"></i>Search Request ID
                 </a>
               </div>
@@ -755,7 +852,7 @@
           <div class="p-3 safety-tip-item text-start d-flex align-items-start gap-2">
             <i class="bi bi-patch-exclamation-fill text-warning fs-5 mt-0.5"></i>
             <div>
-              <span class="d-block" style="font-size: 0.88rem; color: var(--text-light); line-height: 1.4;">${tip}</span>
+              <span class="d-block" style="font-size: 0.88rem; color: var(--text-dark); line-height: 1.4;">${tip}</span>
             </div>
           </div>
         `).join("");
@@ -829,7 +926,7 @@
         <div class="p-3 safety-tip-item text-start d-flex align-items-start gap-2">
           <i class="bi bi-patch-exclamation-fill text-warning fs-5 mt-0.5"></i>
           <div>
-            <span class="d-block" style="font-size: 0.88rem; color: var(--text-light); line-height: 1.4;">${tip}</span>
+            <span class="d-block" style="font-size: 0.88rem; color: var(--text-dark); line-height: 1.4;">${tip}</span>
           </div>
         </div>
       `).join("");
