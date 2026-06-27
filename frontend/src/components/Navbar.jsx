@@ -6,16 +6,16 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-emerald-900/5 py-4 transition-all shadow-[0_2px_20px_rgba(45,90,39,0.03)]">
       <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
         <a href="index.html" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 flex items-center justify-center text-xl shadow-[0_0_10px_rgba(16,185,129,0.05)] group-hover:scale-105 group-hover:border-emerald-500/40 transition-all duration-300">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 flex items-center justify-center text-2xl shadow-[0_0_10px_rgba(16,185,129,0.05)] group-hover:scale-105 group-hover:border-emerald-500/40 transition-all duration-300">
             <span>🌱</span>
           </div>
           <div className="flex flex-col">
-            <span className="font-display font-extrabold text-xl md:text-2xl tracking-tight text-slate-800 leading-none">
-              Smart Resource
+            <span className="font-display font-extrabold text-2xl md:text-3xl tracking-tight text-slate-800 leading-none">
+              SRAS
             </span>
-            <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest leading-none mt-1.5 flex items-center gap-1">
+            <span className="text-[11px] font-bold text-emerald-600 uppercase tracking-widest leading-none mt-1.5 flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              Allocation Portal
+              Smart Resource Allocation System
             </span>
           </div>
         </a>
