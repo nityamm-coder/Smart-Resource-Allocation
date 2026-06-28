@@ -812,6 +812,18 @@ if (isDashboardPage) {
            <i class="bi bi-person-x"></i> No volunteer matched yet
          </div>`;
 
+    let suppliesHtml = "";
+    if (req.allocatedSupplies && req.allocatedSupplies.length > 0) {
+      suppliesHtml = `
+        <div class="mt-2 mb-2 p-2 rounded text-start" style="background: rgba(16, 185, 129, 0.06); border: 1px solid rgba(16, 185, 129, 0.16); font-size: 0.75rem; color: #a7f3d0;">
+          <strong style="color: #34d399;"><i class="bi bi-box-seam me-1"></i>Allocated Supplies:</strong>
+          <div class="d-flex flex-wrap gap-1 mt-1">
+            ${req.allocatedSupplies.map(s => `<span class="badge bg-success-subtle text-success border border-success-subtle py-1 px-2" style="font-size:0.68rem; border-radius: 4px;">${s.item} x${s.quantity}</span>`).join('')}
+          </div>
+        </div>
+      `;
+    }
+
     const statuses = ["Open", "In Progress", "Resolved"];
     const optionsHtml = statuses
       .map(
@@ -926,7 +938,7 @@ if (isDashboardPage) {
             <div class="meta mb-2">
               <i class="bi bi-map me-1"></i>Hub: ${req.zone}
             </div>
-            
+            ${suppliesHtml}
             ${volunteerHtml}
             
             <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2">
@@ -981,6 +993,7 @@ if (isDashboardPage) {
         <div class="meta mb-2">
           <i class="bi bi-map me-1"></i>Hub: ${req.zone}
         </div>
+        ${suppliesHtml}
         ${volunteerHtml}
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-2">
           <div class="d-flex align-items-center gap-2">
@@ -1131,28 +1144,47 @@ if (isDashboardPage) {
   }
 
   function updateInventoryUI(inventory) {
-    const categories = ["Food", "Medical", "Shelter", "Other"];
-    categories.forEach(cat => {
-      const countEl = document.getElementById(`inv-${cat}-count`);
-      const cardEl = document.getElementById(`inv-${cat}-card`);
-      if (countEl && cardEl) {
-        const count = inventory[cat] !== undefined ? inventory[cat] : 0;
-        countEl.textContent = count;
-        
-        // Reset classes
-        cardEl.className = "p-3 rounded border border-secondary d-flex justify-content-between align-items-center";
-        countEl.className = "fs-4 fw-extrabold text-white mt-1";
-        
-        // Check levels
-        if (count === 0) {
-          cardEl.classList.add("out-of-stock-card");
-          countEl.classList.add("out-of-stock-count");
-        } else if (count < 10) {
-          cardEl.classList.add("low-stock-card");
-          countEl.classList.add("low-stock-count");
-        }
+    const tbody = document.getElementById("inventory-table-body");
+    if (!tbody) return;
+
+    let html = "";
+    let totalFood = 0;
+    let totalMedical = 0;
+    let totalShelter = 0;
+
+    if (inventory && typeof inventory === "object" && !inventory.hasOwnProperty("Food Packets")) {
+      for (const [zone, stock] of Object.entries(inventory)) {
+        const food = stock["Food Packets"] || 0;
+        const lifeJackets = stock["Life Jackets"] || 0;
+        const medical = stock["Medical Kits"] || 0;
+        const shelter = stock["Shelter Kits"] || 0;
+
+        totalFood += food;
+        totalMedical += medical;
+        totalShelter += shelter;
+
+        html += `
+          <tr>
+            <td><strong>${zone}</strong></td>
+            <td><span class="fw-bold ${food === 0 ? 'text-danger' : food < 10 ? 'text-warning' : 'text-success'}">${food}</span></td>
+            <td><span class="fw-bold ${lifeJackets === 0 ? 'text-danger' : lifeJackets < 5 ? 'text-warning' : 'text-success'}">${lifeJackets}</span></td>
+            <td><span class="fw-bold ${medical === 0 ? 'text-danger' : medical < 10 ? 'text-warning' : 'text-success'}">${medical}</span></td>
+            <td><span class="fw-bold ${shelter === 0 ? 'text-danger' : shelter < 5 ? 'text-warning' : 'text-success'}">${shelter}</span></td>
+          </tr>
+        `;
       }
-    });
+    } else {
+      html = `<tr><td colspan="5" class="text-center text-muted">No zone-based stock found.</td></tr>`;
+    }
+    tbody.innerHTML = html;
+
+    // Update the Overview widgets directly
+    const ovFood = document.getElementById("ov-food");
+    const ovMedical = document.getElementById("ov-medical");
+    const ovShelter = document.getElementById("ov-shelter");
+    if (ovFood) ovFood.textContent = totalFood;
+    if (ovMedical) ovMedical.textContent = totalMedical;
+    if (ovShelter) ovShelter.textContent = totalShelter;
   }
 
   async function loadInventory() {
@@ -1162,25 +1194,54 @@ if (isDashboardPage) {
         const data = await res.json();
         updateInventoryUI(data.inventory);
       }
-
-      // Load on-chain supply balances
-      const bcRes = await fetch(`${API_BASE}/api/blockchain/balances`);
-      if (bcRes.ok) {
-        const bcData = await bcRes.json();
-        if (bcData.success && bcData.balances && bcData.balances.ngo) {
-          const ngoBalances = bcData.balances.ngo;
-          const categories = ["Food", "Medical", "Shelter", "Other"];
-          categories.forEach(cat => {
-            const bcCountEl = document.getElementById(`blockchain-${cat}-count`);
-            if (bcCountEl) {
-              bcCountEl.textContent = ngoBalances[cat] !== undefined ? ngoBalances[cat] : 0;
-            }
-          });
-        }
-      }
     } catch (err) {
       console.error("Error loading inventory:", err);
     }
+  }
+
+  // ── AI Insights Button Handler ──────────────────────────────
+  const generateInsightsBtn = document.getElementById("generate-insights-btn");
+  const aiInsightsContent = document.getElementById("ai-insights-content");
+  
+  if (generateInsightsBtn && aiInsightsContent) {
+    generateInsightsBtn.addEventListener("click", async () => {
+      generateInsightsBtn.disabled = true;
+      const originalHtml = generateInsightsBtn.innerHTML;
+      generateInsightsBtn.innerHTML = `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Analyzing...`;
+      
+      try {
+        const res = await fetch(`${API_BASE}/api/insights`, {
+          method: "POST"
+        });
+        if (res.ok) {
+          const data = await res.json();
+          aiInsightsContent.innerHTML = `<div class="ai-report-markdown text-dark p-2" style="line-height: 1.6;">${parseMarkdown(data.report)}</div>`;
+        } else {
+          showToast("Failed to generate AI insights", "danger");
+        }
+      } catch (err) {
+        console.error("AI Insights request failed:", err);
+        showToast("Error communicating with AI services.", "danger");
+      } finally {
+        generateInsightsBtn.disabled = false;
+        generateInsightsBtn.innerHTML = originalHtml;
+      }
+    });
+  }
+
+  function parseMarkdown(md) {
+    if (!md) return "";
+    return md
+      .replace(/^### (.*$)/gim, '<h6 class="fw-bold text-dark mt-3 mb-2"><i class="bi bi-chevron-right text-primary me-1"></i>$1</h6>')
+      .replace(/^## (.*$)/gim, '<h5 class="fw-bold text-primary mt-4 mb-2">$1</h5>')
+      .replace(/^# (.*$)/gim, '<h4 class="fw-extrabold text-success mt-4 mb-3">$1</h4>')
+      .replace(/^\* (.*$)/gim, '<li class="ms-3 mb-1">$1</li>')
+      .replace(/^\- (.*$)/gim, '<li class="ms-3 mb-1">$1</li>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/\`\`\`([\s\S]*?)\`\`\`/g, '<pre class="bg-light p-2 rounded my-2" style="font-size:0.8rem;"><code>$1</code></pre>')
+      .replace(/\`([^\`]+)\`/g, '<code>$1</code>')
+      .replace(/\n/g, '<br>');
   }
 
   async function loadVolunteers() {
@@ -1515,6 +1576,7 @@ if (isDashboardPage) {
   if (restockForm) {
     restockForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const zone = document.getElementById("restock-zone").value;
       const category = document.getElementById("restock-category").value;
       const quantity = parseInt(document.getElementById("restock-qty").value, 10);
       
@@ -1522,12 +1584,14 @@ if (isDashboardPage) {
         const res = await fetch(`${API_BASE}/api/inventory/restock`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ category, quantity })
+          body: JSON.stringify({ zone, category, quantity })
         });
         
         if (res.ok) {
           const data = await res.json();
-          updateInventoryUI(data.inventory);
+          
+          // Trigger a full page reload of the inventory table
+          await loadInventory();
           
           // Hide Bootstrap Modal
           const modalEl = document.getElementById("restock-modal");
@@ -1540,12 +1604,14 @@ if (isDashboardPage) {
             if (closeBtn) closeBtn.click();
           }
           restockForm.reset();
+          showToast(`Successfully restocked ${quantity} ${category} in ${zone}!`, "success");
         } else {
           const err = await res.json();
           showToast("Error restocking: " + err.error, "danger");
         }
       } catch (err) {
         console.error("Restock request failed:", err);
+        showToast("Restock request failed to send.", "danger");
       }
     });
   }

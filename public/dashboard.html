@@ -309,55 +309,60 @@
                 <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
                   <div>
                     <h3 class="fs-5 fw-bold mb-1 text-dark d-flex align-items-center">
-                      <i class="bi bi-box-seam-fill me-2 text-primary"></i>Relief Supply Inventory
+                      <i class="bi bi-box-seam-fill me-2 text-primary"></i>Relief Supply Inventory (All Zones)
                     </h3>
-                    <p class="mb-0 text-muted" style="font-size:0.82rem;">Current community emergency relief stockpiles (local caches synced against the L2 EVM smart contract ledger).</p>
+                    <p class="mb-0 text-muted" style="font-size:0.82rem;">Current community emergency relief stockpiles by zone (local caches synced against the L2 EVM smart contract ledger).</p>
                   </div>
                   <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#restock-modal">
                     <i class="bi bi-plus-circle me-1"></i>Restock Supplies
                   </button>
                 </div>
                 
-                <div class="row g-3">
-                  <div class="col-6 col-md-3">
-                    <div class="p-3 rounded border d-flex justify-content-between align-items-center" id="inv-Food-card" style="background: rgba(220, 255, 223, 0.9) !important; border-color: rgba(45, 154, 78, 0.18) !important;">
-                      <div>
-                        <div class="inventory-label">🍎 FOOD PACKS</div>
-                        <div class="fs-4 fw-extrabold text-dark mt-1" id="inv-Food-count">—</div>
-                        <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 2px;" class="text-success d-flex align-items-center"><i class="bi bi-shield-check me-1 text-success"></i>On-Chain: <span id="blockchain-Food-count" class="ms-1 fw-bold">—</span></div>
-                      </div>
-                      <i class="bi bi-apple fs-3 text-success"></i>
-                    </div>
+                <div class="table-responsive">
+                  <table class="table table-bordered align-middle mb-0 text-dark" style="background: white;">
+                    <thead class="table-light">
+                      <tr>
+                        <th>Hub / Zone</th>
+                        <th>🍎 Food Packets</th>
+                        <th>🛟 Life Jackets</th>
+                        <th>🏥 Medical Kits</th>
+                        <th>🏠 Shelter Kits</th>
+                      </tr>
+                    </thead>
+                    <tbody id="inventory-table-body">
+                      <tr>
+                        <td colspan="5" class="text-center py-4 text-muted">
+                          <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+                          <span class="ms-2">Loading stockpiles...</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- AI Logistics Insights Panel -->
+          <div class="row g-3 mb-4">
+            <div class="col-12">
+              <div class="form-card w-100 m-0 p-4" style="max-width: 100%; background: linear-gradient(135deg, rgba(239, 246, 255, 0.95), rgba(219, 234, 254, 0.95)); border: 1px solid rgba(59, 130, 246, 0.25);">
+                <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                  <div>
+                    <h3 class="fs-5 fw-bold mb-1 text-dark d-flex align-items-center">
+                      <i class="bi bi-cpu-fill me-2 text-primary animate-pulse"></i>AI Logistics Advisor
+                    </h3>
+                    <p class="mb-0 text-muted" style="font-size:0.82rem;">Get real-time predictions, shortage alerts, and recommendations based on current inventory and active requests.</p>
                   </div>
-                  <div class="col-6 col-md-3">
-                    <div class="p-3 rounded border d-flex justify-content-between align-items-center" id="inv-Medical-card" style="background: rgba(220, 255, 223, 0.9) !important; border-color: rgba(45, 154, 78, 0.18) !important;">
-                      <div>
-                        <div class="inventory-label">🏥 MEDICAL KITS</div>
-                        <div class="fs-4 fw-extrabold text-dark mt-1" id="inv-Medical-count">—</div>
-                        <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 2px;" class="text-info d-flex align-items-center"><i class="bi bi-shield-check me-1 text-info"></i>On-Chain: <span id="blockchain-Medical-count" class="ms-1 fw-bold">—</span></div>
-                      </div>
-                      <i class="bi bi-hospital fs-3 text-info"></i>
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <div class="p-3 rounded border d-flex justify-content-between align-items-center" id="inv-Shelter-card" style="background: rgba(220, 255, 223, 0.9) !important; border-color: rgba(45, 154, 78, 0.18) !important;">
-                      <div>
-                        <div class="inventory-label">🏠 SHELTER KITS</div>
-                        <div class="fs-4 fw-extrabold text-dark mt-1" id="inv-Shelter-count">—</div>
-                        <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 2px;" class="text-warning d-flex align-items-center"><i class="bi bi-shield-check me-1 text-warning"></i>On-Chain: <span id="blockchain-Shelter-count" class="ms-1 fw-bold">—</span></div>
-                      </div>
-                      <i class="bi bi-house-door fs-3 text-warning"></i>
-                    </div>
-                  </div>
-                  <div class="col-6 col-md-3">
-                    <div class="p-3 rounded border d-flex justify-content-between align-items-center" id="inv-Other-card" style="background: rgba(220, 255, 223, 0.9) !important; border-color: rgba(45, 154, 78, 0.18) !important;">
-                      <div>
-                        <div class="inventory-label">ℹ️ OTHER SUPPLIES</div>
-                        <div class="fs-4 fw-extrabold text-dark mt-1" id="inv-Other-count">—</div>
-                        <div style="font-size: 0.7rem; opacity: 0.8; margin-top: 2px;" class="text-secondary d-flex align-items-center"><i class="bi bi-shield-check me-1 text-secondary"></i>On-Chain: <span id="blockchain-Other-count" class="ms-1 fw-bold">—</span></div>
-                      </div>
-                      <i class="bi bi-info-circle fs-3 text-secondary"></i>
-                    </div>
+                  <button class="btn btn-info btn-sm text-white" id="generate-insights-btn" style="background-color: #3b82f6; border-color: #3b82f6;">
+                    <i class="bi bi-magic me-1"></i>Generate AI Logistics Report
+                  </button>
+                </div>
+                
+                <div class="p-3 rounded border text-dark bg-white" style="font-size: 0.88rem; min-height: 100px;" id="ai-insights-content">
+                  <div class="text-center text-muted py-4" id="ai-insights-placeholder">
+                    <i class="bi bi-robot fs-2"></i>
+                    <p class="mb-0 mt-2">Click "Generate AI Logistics Report" above to compile data and ask Gemini for optimization suggestions.</p>
                   </div>
                 </div>
               </div>
@@ -371,7 +376,7 @@
               <table class="logs-table mb-0">
                 <thead>
                   <tr>
-                    <th>Block #</th>
+                    <th>Hub / Zone</th>
                     <th>Action</th>
                     <th>Details</th>
                     <th>Timestamp</th>
@@ -594,13 +599,23 @@
           <form id="restock-form">
             <div class="modal-body">
               <div class="mb-3">
+                <label for="restock-zone" class="form-label fw-semibold" style="font-size: 0.85rem;">Hub / Zone</label>
+                <select class="form-select text-white border-secondary" id="restock-zone" style="background: rgba(15, 23, 42, 0.8);" required>
+                  <option value="" disabled selected>Select zone...</option>
+                  <option value="Vasind">Vasind</option>
+                  <option value="Kalyan">Kalyan</option>
+                  <option value="Thane">Thane</option>
+                  <option value="Mumbai Central">Mumbai Central</option>
+                </select>
+              </div>
+              <div class="mb-3">
                 <label for="restock-category" class="form-label fw-semibold" style="font-size: 0.85rem;">Supply Category</label>
                 <select class="form-select text-white border-secondary" id="restock-category" style="background: rgba(15, 23, 42, 0.8);" required>
                   <option value="" disabled selected>Select category...</option>
-                  <option value="Food">🍎 Food Packs</option>
-                  <option value="Medical">🏥 Medical Kits</option>
-                  <option value="Shelter">🏠 Shelter Kits</option>
-                  <option value="Other">ℹ️ Other Supplies</option>
+                  <option value="Food Packets">🍎 Food Packets</option>
+                  <option value="Life Jackets">🛟 Life Jackets</option>
+                  <option value="Medical Kits">🏥 Medical Kits</option>
+                  <option value="Shelter Kits">🏠 Shelter Kits</option>
                 </select>
               </div>
               <div class="mb-3">

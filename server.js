@@ -227,9 +227,42 @@ async function seedVolunteersToDb() {
     await batch.commit();
     console.log("🌱 Seeded mock volunteers to Firestore 'volunteers' collection.");
   } catch (err) {
-    console.error("⚠️ Error seeding volunteers to Firestore:", err.message);
   }
 }
+
+// ── Helper: Seed Inventory To Firestore ────────────────────────
+const initialInventory = {
+  "Vasind": { "Food Packets": 50, "Life Jackets": 20, "Medical Kits": 15, "Shelter Kits": 10 },
+  "Kalyan": { "Food Packets": 40, "Life Jackets": 25, "Medical Kits": 30, "Shelter Kits": 15 },
+  "Thane": { "Food Packets": 100, "Life Jackets": 50, "Medical Kits": 45, "Shelter Kits": 30 },
+  "Mumbai Central": { "Food Packets": 80, "Life Jackets": 10, "Medical Kits": 60, "Shelter Kits": 20 }
+};
+
+async function seedInventoryToDb() {
+  if (!db) return;
+  try {
+    const zones = ["Vasind", "Kalyan", "Thane", "Mumbai Central"];
+    const batch = db.batch();
+    let needsCommit = false;
+    for (const zone of zones) {
+      const docRef = db.collection("inventory").doc(zone);
+      const doc = await docRef.get();
+      if (!doc.exists) {
+        batch.set(docRef, initialInventory[zone]);
+        needsCommit = true;
+      }
+    }
+    if (needsCommit) {
+      await batch.commit();
+      console.log("📦 Seeded missing mock zone inventory to Firestore 'inventory' collection.");
+    }
+  } catch (err) {
+    console.error("⚠️ Error seeding inventory to Firestore:", err.message);
+  }
+}
+
+// Call on startup
+seedInventoryToDb();
 
 // ── Helper: Get Dynamic Volunteers ─────────────────────────────
 /**
@@ -409,15 +442,16 @@ Your job is to read a community need description (which may be in English, Hindi
 
 Rules:
 - Return ONLY a raw JSON object. No markdown, no explanation, no extra text.
-- The JSON must have exactly five keys: "category", "urgency", "detectedLanguage", "translatedDescription", and "safetyTips".
+- The JSON must have exactly six keys: "category", "urgency", "detectedLanguage", "translatedDescription", "safetyTips", and "suppliesNeeded".
 - "category" must be exactly ONE of: "Food", "Medical", "Shelter", "Other".
 - "urgency" must be an integer between 1 and 5, where 1 = low and 5 = critical.
 - "detectedLanguage" should be the name of the language the request was written in (e.g. "English", "Hindi", "Marathi", "Hinglish", etc.).
 - "translatedDescription" must be the complete, accurate English translation of the description. If the original description is already in English, "translatedDescription" must match the original description exactly.
 - "safetyTips" must be a JSON array of strings containing 4-5 extremely relevant, specific, actionable, and life-saving safety tips or instructions tailored to this specific scenario and its urgency level (e.g., immediate first aid tips if medical, emergency evacuation or water safety advice if flooding, etc.). These safetyTips MUST be written in the SAME LANGUAGE as the user's description (detectedLanguage). For example, if the description is in Hindi, safetyTips must be in Hindi. If in Hinglish (Hindi written in English alphabet/script), safetyTips must be in Hinglish. If in Marathi, safetyTips must be in Marathi. If in English, safetyTips must be in English. Keep the tips concise, clear, and easy to read.
+- "suppliesNeeded" must be a JSON array of objects representing the estimated physical supplies needed based on the request. Each object must have "item" (must be ONE of: "Food Packets", "Life Jackets", "Medical Kits", "Shelter Kits") and "quantity" (an integer). For example, if a family of 4 needs food, return [{"item": "Food Packets", "quantity": 4}].
 
 Example output:
-{"category": "Medical", "urgency": 5, "detectedLanguage": "Hindi", "translatedDescription": "An elderly man in our building has run out of insulin and cannot reach a hospital.", "safetyTips": ["Keep the patient calm, resting, and hydrated.", "Do not administer insulin if you do not know the correct dose.", "Try to contact local pharmacy or emergency services immediately.", "Prepare a medical history summary for when help arrives."]}
+{"category": "Medical", "urgency": 5, "detectedLanguage": "Hindi", "translatedDescription": "An elderly man in our building has run out of insulin and cannot reach a hospital.", "safetyTips": ["Keep the patient calm, resting, and hydrated.", "Do not administer insulin if you do not know the correct dose.", "Try to contact local pharmacy or emergency services immediately.", "Prepare a medical history summary for when help arrives."], "suppliesNeeded": [{"item": "Medical Kits", "quantity": 1}]}
     `.trim();
 
     const fullPrompt = `${systemPrompt}\n\nDescription: "${description}"`;
@@ -430,7 +464,7 @@ Example output:
     const cleanedText = rawText.replace(/```json|```/g, "").trim();
     const classified = JSON.parse(cleanedText);
 
-    const { category, urgency, detectedLanguage, translatedDescription, safetyTips } = classified;
+    const { category, urgency, detectedLanguage, translatedDescription, safetyTips, suppliesNeeded } = classified;
 
     // ── Step 1.5: Check for duplicate active requests to cluster ──────────
     let matchedRequestDoc = null;
@@ -524,6 +558,35 @@ Example output:
     const dynamicVolunteersList = await getDynamicVolunteers();
     const matchedVolunteer = matchVolunteer(category, zone, dynamicVolunteersList);
 
+    // ── Step 2.5: Deduct from Inventory ──────────────────────
+    let allocatedSupplies = [];
+    if (db && suppliesNeeded && Array.isArray(suppliesNeeded)) {
+      try {
+        const invRef = db.collection("inventory").doc(zone);
+        await db.runTransaction(async (t) => {
+          const invDoc = await t.get(invRef);
+          if (invDoc.exists) {
+            const currentStock = invDoc.data();
+            let updatedStock = { ...currentStock };
+            for (const reqSupply of suppliesNeeded) {
+              const { item, quantity } = reqSupply;
+              if (updatedStock[item] !== undefined) {
+                // Deduct but don't go below 0
+                const deductAmt = Math.min(updatedStock[item], quantity);
+                updatedStock[item] -= deductAmt;
+                if (deductAmt > 0) {
+                  allocatedSupplies.push({ item, quantity: deductAmt });
+                }
+              }
+            }
+            t.update(invRef, updatedStock);
+          }
+        });
+      } catch (err) {
+        console.error("⚠️ Error deducting inventory:", err.message);
+      }
+    }
+
     // ── Step 3: Build the full record to save ────────────────
     const timestamp = new Date().toISOString();
     const requestRecord = {
@@ -536,6 +599,7 @@ Example output:
       detectedLanguage: detectedLanguage || "English",
       translatedDescription: translatedDescription || description,
       safetyTips: safetyTips || [],
+      allocatedSupplies,
       matchedVolunteer: matchedVolunteer
         ? {
             id: matchedVolunteer.id,
@@ -988,34 +1052,122 @@ app.get("/api/requests/:id", async (req, res) => {
 
 // ── Route: GET /api/inventory ─────────────────────────────────
 /**
- * Retrieves the current relief supply inventory counts.
+ * Retrieves the current relief supply inventory counts grouped by zone.
  * Seeds default values if the inventory doesn't exist yet.
  */
 app.get("/api/inventory", async (req, res) => {
   try {
-    const docRef = db.collection("inventory").doc("current");
-    const doc = await docRef.get();
-    if (!doc.exists) {
-      const defaultInventory = { Food: 50, Medical: 30, Shelter: 20, Other: 100 };
-      await docRef.set(defaultInventory);
-      return res.json({ success: true, inventory: defaultInventory });
+    if (!db) {
+      return res.json({ success: true, inventory: initialInventory });
     }
-    return res.json({ success: true, inventory: doc.data() });
+    const snapshot = await db.collection("inventory").get();
+    let inventory = {};
+    snapshot.forEach(doc => {
+      if (doc.id !== "current") {
+        inventory[doc.id] = doc.data();
+      }
+    });
+
+    if (Object.keys(inventory).length === 0) {
+      await seedInventoryToDb();
+      const newSnapshot = await db.collection("inventory").get();
+      newSnapshot.forEach(doc => {
+        if (doc.id !== "current") {
+          inventory[doc.id] = doc.data();
+        }
+      });
+    }
+
+    return res.json({ success: true, inventory });
   } catch (err) {
     console.error("❌ Error fetching inventory:", err.message);
     return res.status(500).json({ error: "Could not fetch inventory." });
   }
 });
 
+// ── Route: POST /api/insights ──────────────────────────────────
+/**
+ * Generates an AI Logistics Optimization Report using Gemini based
+ * on recent requests and current stock levels.
+ */
+app.post("/api/insights", async (req, res) => {
+  try {
+    if (!db) {
+      return res.json({ success: true, report: "Database not connected. Offline mode active. Mock insights: Restock food packets in Kalyan." });
+    }
+
+    // 1. Fetch current inventory
+    const invSnapshot = await db.collection("inventory").get();
+    const inventory = {};
+    invSnapshot.forEach(doc => {
+      if (doc.id !== "current") {
+        inventory[doc.id] = doc.data();
+      }
+    });
+
+    // 2. Fetch last 20 requests
+    const reqSnapshot = await db.collection("requests")
+      .orderBy("createdAt", "desc")
+      .limit(20)
+      .get();
+    
+    const requests = [];
+    reqSnapshot.forEach(doc => {
+      const data = doc.data();
+      requests.push({
+        id: doc.id,
+        zone: data.zone,
+        category: data.category,
+        urgency: data.urgency,
+        description: data.translatedDescription || data.description,
+        allocatedSupplies: data.allocatedSupplies || []
+      });
+    });
+
+    // 3. Prompt Gemini
+    const prompt = `
+You are a highly capable AI Logistics and Disaster Relief coordinator.
+Analyze the following active/recent disaster requests and the current inventory levels across different hubs (zones).
+
+Recent Emergency Requests (JSON):
+${JSON.stringify(requests, null, 2)}
+
+Current Hub Stock Levels (JSON):
+${JSON.stringify(inventory, null, 2)}
+
+Generate a detailed, formatted Markdown report to help the NGO admins manage logistics.
+The report must include:
+1. **Summary of Trends:** Identify which zones/hubs are experiencing the highest volume of requests and the most common needs (e.g. Food Packets vs. Medical Kits).
+2. **Critical Inventory Alerts:** Warn about any hubs that are running dangerously low on specific items (e.g. less than 5 remaining) or will run out soon based on current trends.
+3. **Logistics Optimization Recommendations:** Provide concrete recommendations on which hubs should restock or where items should be transferred (e.g., "Transfer 10 Life Jackets from Thane to Kalyan to meet rising flood requests"). Make sure these are actionable.
+4. **General Coordination Tips:** 1-2 closing logistics best practices for this scenario.
+
+Keep the tone professional, urgent, and focused. Do not return any JSON or wrapper text, just the Markdown report directly.
+`;
+
+    const geminiResult = await geminiModel.generateContent(prompt);
+    const reportMarkdown = geminiResult.response.text();
+    return res.json({ success: true, report: reportMarkdown });
+  } catch (err) {
+    console.error("❌ Error generating AI insights:", err.message);
+    return res.status(500).json({ error: "Could not generate AI logistics insights." });
+  }
+});
+
 // ── Route: POST /api/inventory/restock ────────────────────────
 /**
- * Restocks relief supply items.
- * Expects { category, quantity } in body.
+ * Restocks relief supply items for a specific zone.
+ * Expects { zone, category, quantity } in body.
  */
 app.post("/api/inventory/restock", async (req, res) => {
-  const { category, quantity } = req.body;
+  const { zone, category, quantity } = req.body;
   
-  const validCategories = ["Food", "Medical", "Shelter", "Other"];
+  const validZones = ["Vasind", "Kalyan", "Thane", "Mumbai Central"];
+  const validCategories = ["Food Packets", "Life Jackets", "Medical Kits", "Shelter Kits"];
+
+  if (!validZones.includes(zone)) {
+    return res.status(400).json({ error: `Invalid zone. Use one of: ${validZones.join(", ")}` });
+  }
   if (!validCategories.includes(category)) {
     return res.status(400).json({ error: `Invalid category. Use one of: ${validCategories.join(", ")}` });
   }
@@ -1026,12 +1178,12 @@ app.post("/api/inventory/restock", async (req, res) => {
   }
 
   try {
-    const docRef = db.collection("inventory").doc("current");
+    const docRef = db.collection("inventory").doc(zone);
     let updatedInv = {};
     
     await db.runTransaction(async (transaction) => {
       const doc = await transaction.get(docRef);
-      const currentInv = doc.exists ? doc.data() : { Food: 50, Medical: 30, Shelter: 20, Other: 100 };
+      const currentInv = doc.exists ? doc.data() : { "Food Packets": 0, "Life Jackets": 0, "Medical Kits": 0, "Shelter Kits": 0 };
       const currentVal = currentInv[category] !== undefined ? currentInv[category] : 0;
       const newVal = currentVal + numQty;
       
@@ -1047,13 +1199,13 @@ app.post("/api/inventory/restock", async (req, res) => {
       if (mintResult.success) {
         mintTxHash = mintResult.txHash;
         mintBlock = mintResult.blockNumber;
-        console.log(`⛓️ Blockchain Supply Minted: ${numQty} ${category} -> Tx ${mintTxHash}`);
+        console.log(`⛓️ Blockchain Supply Minted: ${numQty} ${category} in ${zone} -> Tx ${mintTxHash}`);
       }
     } catch (bcErr) {
       console.error("⚠️ Blockchain supply minting failed:", bcErr.message);
     }
 
-    return res.json({ success: true, inventory: updatedInv, blockchainTx: mintTxHash, blockchainBlock: mintBlock });
+    return res.json({ success: true, zone, inventory: updatedInv, blockchainTx: mintTxHash, blockchainBlock: mintBlock });
   } catch (err) {
     console.error("❌ Error restocking inventory:", err.message);
     return res.status(500).json({ error: "Could not restock inventory." });
@@ -1261,28 +1413,11 @@ app.patch("/api/requests/:id/status", async (req, res) => {
 
     const timestamp = new Date().toISOString();
     let timelineNote = `Status updated from ${oldStatus} to ${status}.`;
-    const inventoryRef = db.collection("inventory").doc("current");
     const category = currentData.category || "Other";
 
     await db.runTransaction(async (transaction) => {
-      // 1. Calculate inventory changes
-      if (status === "Resolved" && oldStatus !== "Resolved") {
-        const invDoc = await transaction.get(inventoryRef);
-        const currentInv = invDoc.exists ? invDoc.data() : { Food: 50, Medical: 30, Shelter: 20, Other: 100 };
-        const count = currentInv[category] !== undefined ? currentInv[category] : 10;
-        const newCount = Math.max(0, count - 1);
-        
-        transaction.set(inventoryRef, { [category]: newCount }, { merge: true });
-        timelineNote += ` 1 ${category} package deducted from inventory (Remaining: ${newCount}).`;
-      } else if (oldStatus === "Resolved" && status !== "Resolved") {
-        const invDoc = await transaction.get(inventoryRef);
-        const currentInv = invDoc.exists ? invDoc.data() : { Food: 50, Medical: 30, Shelter: 20, Other: 100 };
-        const count = currentInv[category] !== undefined ? currentInv[category] : 10;
-        const newCount = count + 1;
-        
-        transaction.set(inventoryRef, { [category]: newCount }, { merge: true });
-        timelineNote += ` 1 ${category} package returned to inventory (New Total: ${newCount}).`;
-      }
+      // 1. Calculate inventory changes (Handled at request submission)
+      timelineNote += " Supplies already allocated at submission.";
 
       // 2. Build new timeline
       const newTimelineEntry = {
@@ -1314,6 +1449,7 @@ app.patch("/api/requests/:id/status", async (req, res) => {
           timeline: updatedTimeline,
           createdAt: currentData.createdAt || null,
           archivedAt: timestamp,
+          allocatedSupplies: currentData.allocatedSupplies || [],
           deleted: false
         }, { merge: true });
       } else if (oldStatus === "Resolved" && status !== "Resolved") {
@@ -1327,14 +1463,15 @@ app.patch("/api/requests/:id/status", async (req, res) => {
       try {
         const volId = currentData.matchedVolunteer ? currentData.matchedVolunteer.id : null;
         if (volId) {
-          const bcSupplyResult = await blockchain.transferSupply("NGO_ADMIN", volId, category, 1);
-          console.log(`⛓️ Blockchain Supply Dispatched: Request ${id} to Volunteer ${volId} -> Tx ${bcSupplyResult.txHash}`);
-          
-          const blockchainData = {
-            blockchainDispatchTx: bcSupplyResult.txHash,
-            blockchainDispatchBlock: bcSupplyResult.blockNumber
-          };
-          await db.collection("requests").doc(id).update(blockchainData);
+          if (currentData.allocatedSupplies && currentData.allocatedSupplies.length > 0) {
+            for (const supply of currentData.allocatedSupplies) {
+              const bcSupplyResult = await blockchain.transferSupply("NGO_ADMIN", volId, supply.item, supply.quantity);
+              console.log(`⛓️ Blockchain Supply Dispatched: Request ${id} -> ${supply.quantity} ${supply.item} to Volunteer ${volId} -> Tx ${bcSupplyResult.txHash}`);
+            }
+          } else {
+            const bcSupplyResult = await blockchain.transferSupply("NGO_ADMIN", volId, category, 1);
+            console.log(`⛓️ Blockchain Supply Dispatched: Request ${id} -> 1 ${category} to Volunteer ${volId} -> Tx ${bcSupplyResult.txHash}`);
+          }
         }
       } catch (bcErr) {
         console.error("⚠️ Blockchain supply dispatch failed:", bcErr.message);
@@ -1459,6 +1596,22 @@ app.delete("/api/requests/:id", async (req, res) => {
           timestamp,
           note: `Request deleted (Status at deletion: ${currentData.status}).`
         }];
+
+        // Return supplies to inventory if request was not resolved
+        if (currentData.status !== "Resolved" && currentData.allocatedSupplies && currentData.allocatedSupplies.length > 0) {
+          const invRef = db.collection("inventory").doc(currentData.zone || "Thane");
+          const invDoc = await transaction.get(invRef);
+          if (invDoc.exists) {
+            const currentStock = invDoc.data();
+            let updatedStock = { ...currentStock };
+            for (const supply of currentData.allocatedSupplies) {
+              if (updatedStock[supply.item] !== undefined) {
+                updatedStock[supply.item] += supply.quantity;
+              }
+            }
+            transaction.update(invRef, updatedStock);
+          }
+        }
         
         transaction.set(archiveRef, {
           originalId: id,
@@ -1476,6 +1629,7 @@ app.delete("/api/requests/:id", async (req, res) => {
           timeline: updatedTimeline,
           createdAt: currentData.createdAt || null,
           archivedAt: timestamp,
+          allocatedSupplies: currentData.allocatedSupplies || [],
           deleted: true
         }, { merge: true });
         
@@ -1497,7 +1651,7 @@ app.delete("/api/requests/:id", async (req, res) => {
 if (process.env.NODE_ENV !== "production") {
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, () => {
-    console.log(`🚀 Server running at http://localhost:${PORT}`);
+    console.log(`🚀 Server running at http://localhost:${PORT}`); // Trigger nodemon restart
   });
 }
 
